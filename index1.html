@@ -1,0 +1,2087 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Дино-Баттл Квиз — детская игра</title>
+  <style>
+    :root{
+      --bg1:#081024;
+      --bg2:#120b2a;
+      --card:#0e1b3a;
+      --card2:#0a1633;
+      --text:#eaf2ff;
+      --muted:#b9c8ff;
+      --accent:#7c5cff;
+      --accent2:#2ee6a6;
+      --warn:#ffcc66;
+      --bad:#ff5c7a;
+      --good:#2ee6a6;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 18px;
+      --btnRadius: 16px;
+      --stroke: rgba(255,255,255,.12);
+      --stroke2: rgba(124,92,255,.32);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 15% 10%, rgba(124,92,255,.35), transparent 60%),
+        radial-gradient(900px 600px at 85% 15%, rgba(46,230,166,.22), transparent 60%),
+        radial-gradient(900px 600px at 60% 95%, rgba(255,204,102,.14), transparent 60%),
+        linear-gradient(140deg, var(--bg1), var(--bg2));
+      overflow-x:hidden;
+    }
+
+    /* Soft star field */
+    .stars{
+      position:fixed; inset:0;
+      pointer-events:none;
+      opacity:.35;
+      background-image:
+        radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.9), transparent 60%),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,.8), transparent 60%),
+        radial-gradient(1px 1px at 60% 40%, rgba(255,255,255,.8), transparent 60%),
+        radial-gradient(1px 1px at 80% 70%, rgba(255,255,255,.7), transparent 60%),
+        radial-gradient(1px 1px at 90% 30%, rgba(255,255,255,.8), transparent 60%),
+        radial-gradient(1px 1px at 20% 55%, rgba(255,255,255,.7), transparent 60%),
+        radial-gradient(1px 1px at 45% 15%, rgba(255,255,255,.9), transparent 60%),
+        radial-gradient(1px 1px at 70% 90%, rgba(255,255,255,.6), transparent 60%);
+      mix-blend-mode: screen;
+      filter: blur(.2px);
+    }
+
+    .wrap{
+      max-width: 1150px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+      position:relative;
+      z-index:1;
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom: 18px;
+    }
+
+    .brand{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+
+    .logo{
+      width:52px; height:52px;
+      border-radius: 16px;
+      background:
+        radial-gradient(40px 40px at 30% 30%, rgba(255,255,255,.25), transparent 60%),
+        linear-gradient(135deg, rgba(124,92,255,.95), rgba(46,230,166,.7));
+      box-shadow: 0 18px 40px rgba(124,92,255,.18);
+      border: 1px solid rgba(255,255,255,.18);
+      display:grid;
+      place-items:center;
+      position:relative;
+      overflow:hidden;
+    }
+    .logo:after{
+      content:"";
+      position:absolute; inset:-60px -60px auto auto;
+      width:120px; height:120px;
+      background: radial-gradient(circle, rgba(255,255,255,.35), transparent 55%);
+      transform: rotate(25deg);
+      opacity:.8;
+    }
+    .logo span{
+      font-size: 26px;
+      position:relative;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.3));
+    }
+
+    h1{
+      font-size: clamp(20px, 3vw, 30px);
+      line-height: 1.15;
+      margin:0;
+      letter-spacing: .2px;
+    }
+    .subtitle{
+      margin-top:4px;
+      color: var(--muted);
+      font-size: 13.5px;
+    }
+
+    .pill{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(10,22,51,.45);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.22);
+      white-space:nowrap;
+    }
+    .pill .k{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.75);
+    }
+    .pill .v{
+      font-weight: 700;
+      letter-spacing:.2px;
+    }
+
+    main{
+      display:grid;
+      grid-template-columns: 1fr 240px;
+      gap: 16px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      main{ grid-template-columns: 1fr; }
+      .ladder{ order: 2; }
+    }
+
+    .panel{
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(14,27,58,.84), rgba(10,22,51,.72));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+    .panel:before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(800px 500px at 20% 0%, rgba(124,92,255,.14), transparent 50%),
+        radial-gradient(600px 420px at 90% 30%, rgba(46,230,166,.12), transparent 55%);
+      pointer-events:none;
+    }
+
+    .panelHead{
+      position:relative;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+    }
+    .qTitle{
+      font-weight: 800;
+      letter-spacing:.2px;
+      font-size: 15px;
+      color: rgba(255,255,255,.9);
+    }
+    .qText{
+      margin-top:6px;
+      font-size: clamp(16px, 2.2vw, 22px);
+      line-height:1.2;
+    }
+    .badge{
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(124,92,255,.35);
+      background: rgba(124,92,255,.14);
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.86);
+      white-space:nowrap;
+    }
+
+    .panelBody{
+      position:relative;
+      padding: 16px;
+    }
+
+    .dinos{
+      display:grid;
+      grid-template-columns: 1fr 60px 1fr;
+      gap: 12px;
+      align-items:stretch;
+    }
+    @media (max-width: 720px){
+      .dinos{ grid-template-columns: 1fr; }
+      .vs{ display:none; }
+    }
+
+    .vs{
+      display:grid;
+      place-items:center;
+      font-weight: 900;
+      font-size: 22px;
+      color: rgba(255,255,255,.85);
+      text-shadow: 0 8px 20px rgba(0,0,0,.35);
+      border-radius: 18px;
+      border: 1px dashed rgba(255,255,255,.18);
+      background: rgba(6,12,30,.35);
+      position:relative;
+      overflow:hidden;
+    }
+    .vs:before{
+      content:"";
+      position:absolute; inset:-40px;
+      background: radial-gradient(circle, rgba(255,255,255,.12), transparent 60%);
+      transform: rotate(25deg);
+    }
+
+    .dinoCard{
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(8,16,36,.55), rgba(8,16,36,.22));
+      overflow:hidden;
+      position:relative;
+      min-height: 200px;
+    }
+    .dinoCard .top{
+      display:flex;
+      align-items:center;
+      gap: 14px;
+      padding: 14px 14px 10px;
+    }
+
+    .dinoArt{
+      width: 86px;
+      height: 86px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.16);
+      background:
+        radial-gradient(60px 60px at 30% 30%, rgba(255,255,255,.22), transparent 60%),
+        linear-gradient(135deg, rgba(124,92,255,.22), rgba(46,230,166,.16));
+      box-shadow: 0 18px 40px rgba(0,0,0,.22);
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+      flex:0 0 auto;
+      position:relative;
+    }
+
+    .dinoArt svg{ width: 82px; height: 82px; }
+    .dinoArt img.dinoImg{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      opacity:0;
+      transform: scale(1.02);
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .dinoArt.hasImg img.dinoImg{ opacity:1; transform: scale(1.0); }
+    .dinoArt.hasImg svg{ opacity:0; }
+    .dinoArt .shine{
+      position:absolute; inset:-50px -50px auto auto;
+      width: 120px; height: 120px;
+      background: radial-gradient(circle, rgba(255,255,255,.35), transparent 60%);
+      transform: rotate(25deg);
+      opacity:.7;
+      pointer-events:none;
+    }
+
+    .zoomBtn{
+      position:absolute;
+      right:8px;
+      bottom:8px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(6,12,30,.30);
+      color: rgba(255,255,255,.92);
+      border-radius: 14px;
+      padding: 8px 10px;
+      cursor:pointer;
+      font-weight: 900;
+      z-index:2;
+    }
+    .zoomBtn:hover{ border-color: rgba(124,92,255,.55); }
+
+    .dinoMeta .name{
+      font-weight: 900;
+      font-size: 18px;
+      letter-spacing:.2px;
+    }
+    .dinoMeta .when{
+      margin-top: 4px;
+      color: rgba(255,255,255,.78);
+      font-size: 12.5px;
+      line-height:1.2;
+    }
+    .dinoMeta .when span{
+      color: rgba(255,255,255,.92);
+      font-weight: 700;
+    }
+    .dinoCard .bottom{
+      padding: 0 14px 14px;
+      color: rgba(255,255,255,.72);
+      font-size: 12.5px;
+      line-height:1.25;
+    }
+    .dinoCard .bio{
+      margin-top: 10px;
+      color: rgba(255,255,255,.80);
+      font-size: 13px;
+      line-height: 1.25;
+    }
+    .dinoCard .bottom .tag{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(6,12,30,.28);
+      margin-right: 8px;
+      margin-top: 8px;
+      white-space:nowrap;
+    }
+    .dinoCard .bottom .dot{
+      width:10px;height:10px;border-radius:999px; display:inline-block;
+      background: rgba(46,230,166,.8);
+      box-shadow: 0 10px 20px rgba(46,230,166,.18);
+    }
+
+    .answers{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 720px){
+      .answers{ grid-template-columns: 1fr; }
+    }
+
+    .btn{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,.16);
+      background: linear-gradient(180deg, rgba(14,27,58,.65), rgba(10,22,51,.35));
+      color: var(--text);
+      border-radius: var(--btnRadius);
+      padding: 14px 14px;
+      cursor:pointer;
+      display:flex;
+      gap: 12px;
+      align-items:flex-start;
+      text-align:left;
+      transition: transform .08s ease, border-color .18s ease, background .18s ease, filter .18s ease;
+      box-shadow: 0 14px 30px rgba(0,0,0,.22);
+      position:relative;
+      overflow:hidden;
+      min-height: 62px;
+    }
+    .btn:hover{ transform: translateY(-1px); border-color: rgba(124,92,255,.5); filter: brightness(1.04); }
+    .btn:active{ transform: translateY(0px) scale(.99); }
+    .btn[disabled]{ opacity:.75; cursor:not-allowed; filter: saturate(.75); }
+    .btn .key{
+      font-family: var(--mono);
+      font-weight: 900;
+      letter-spacing:.7px;
+      padding: 7px 9px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(6,12,30,.40);
+      min-width: 38px;
+      text-align:center;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+    }
+    .btn .txt{
+      font-size: 14px;
+      line-height: 1.15;
+      color: rgba(255,255,255,.92);
+      font-weight: 700;
+    }
+    .btn .sub{
+      margin-top: 5px;
+      font-size: 12.5px;
+      color: rgba(255,255,255,.72);
+      font-weight: 600;
+    }
+
+    .btn.good{ border-color: rgba(46,230,166,.55); background: linear-gradient(180deg, rgba(46,230,166,.18), rgba(10,22,51,.35)); }
+    .btn.bad{ border-color: rgba(255,92,122,.55); background: linear-gradient(180deg, rgba(255,92,122,.16), rgba(10,22,51,.35)); }
+
+    .feedback{
+      margin-top: 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(6,12,30,.32);
+      padding: 14px;
+      display:none;
+      box-shadow: 0 14px 30px rgba(0,0,0,.18);
+    }
+    .feedback.show{ display:block; }
+    .feedback .line1{
+      display:flex; align-items:center; gap:10px;
+      font-weight: 900;
+      font-size: 16px;
+    }
+    .feedback .bubble{
+      width: 30px; height: 30px;
+      border-radius: 999px;
+      display:grid;
+      place-items:center;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      box-shadow: 0 10px 22px rgba(0,0,0,.18);
+    }
+    .feedback .bubble.good{ border-color: rgba(46,230,166,.55); background: rgba(46,230,166,.14); }
+    .feedback .bubble.bad{ border-color: rgba(255,92,122,.55); background: rgba(255,92,122,.14); }
+    .feedback .explain{ margin-top: 8px; color: rgba(255,255,255,.78); line-height:1.35; font-size: 13.5px; }
+    .feedback .correct{
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.82);
+      font-size: 13px;
+    }
+
+    .actions{
+      margin-top: 14px;
+      display:flex;
+      gap: 12px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .primary{
+      background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(46,230,166,.72));
+      border-color: rgba(255,255,255,.18);
+      font-weight: 900;
+    }
+    .ghost{
+      background: rgba(6,12,30,.25);
+    }
+
+    .ladder{
+      padding: 14px;
+    }
+    .ladder h2{
+      margin: 2px 0 10px;
+      font-size: 14px;
+      letter-spacing:.2px;
+      color: rgba(255,255,255,.86);
+    }
+    .steps{
+      list-style:none;
+      margin:0;
+      padding:0;
+      display:flex;
+      flex-direction:column-reverse;
+      gap: 8px;
+    }
+    .step{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 10px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(6,12,30,.22);
+      font-size: 13px;
+      color: rgba(255,255,255,.80);
+    }
+    .step .n{
+      font-family: var(--mono);
+      opacity:.9;
+    }
+    .step .egg{
+      width: 12px; height: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.25);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+    }
+    .step.active{
+      border-color: rgba(124,92,255,.55);
+      background: rgba(124,92,255,.14);
+      color: rgba(255,255,255,.92);
+    }
+    .step.done{
+      border-color: rgba(46,230,166,.35);
+      background: rgba(46,230,166,.08);
+      color: rgba(255,255,255,.86);
+    }
+    .step.active .egg{ background: rgba(255,204,102,.85); }
+
+    /* Screens */
+    .screen{
+      padding: 20px;
+      text-align:center;
+    }
+    .bigTitle{
+      font-weight: 1000;
+      letter-spacing: .3px;
+      font-size: clamp(26px, 4vw, 40px);
+      margin: 6px 0 10px;
+    }
+    .bigText{
+      color: rgba(255,255,255,.78);
+      line-height:1.35;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .startRow{
+      margin-top: 16px;
+      display:flex;
+      gap: 12px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+
+    .summary{
+      margin-top: 14px;
+      text-align:left;
+      max-width: 900px;
+      margin-left:auto;
+      margin-right:auto;
+      display:grid;
+      gap: 10px;
+    }
+    details{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(6,12,30,.22);
+      padding: 10px 12px;
+    }
+    details summary{
+      cursor:pointer;
+      font-weight: 900;
+      color: rgba(255,255,255,.86);
+      outline:none;
+    }
+    .reviewItem{
+      margin-top: 10px;
+      color: rgba(255,255,255,.78);
+      font-size: 13.5px;
+      line-height:1.35;
+    }
+    .reviewItem b{ color: rgba(255,255,255,.92); }
+
+    .hint{
+      margin-top: 10px;
+      font-size: 12.5px;
+      color: rgba(255,255,255,.72);
+    }
+    .kbd{
+      font-family: var(--mono);
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+    }
+
+    /* Tiny confetti */
+    .confetti{
+      position: fixed;
+      inset: 0;
+      pointer-events:none;
+      overflow:hidden;
+      display:none;
+      z-index: 4;
+    }
+    .confetti.show{ display:block; }
+    .piece{
+      position:absolute;
+      width: 8px;
+      height: 14px;
+      border-radius: 3px;
+      opacity:.9;
+      animation: fall 1.15s ease-in forwards;
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,.2));
+    }
+    @keyframes fall{
+      0%{ transform: translateY(-20px) rotate(0deg); }
+      100%{ transform: translateY(110vh) rotate(360deg); opacity:.0; }
+    }
+
+    /* Lightbox (увеличение картинки) */
+    .lightbox{
+      position: fixed;
+      inset: 0;
+      display:none;
+      place-items:center;
+      background: rgba(0,0,0,.62);
+      backdrop-filter: blur(10px);
+      z-index: 10;
+      padding: 18px;
+    }
+    .lightbox.show{ display:grid; }
+    .lightboxCard{
+      width: min(980px, 96vw);
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: linear-gradient(180deg, rgba(14,27,58,.92), rgba(10,22,51,.82));
+      box-shadow: 0 30px 90px rgba(0,0,0,.55);
+      overflow:hidden;
+      transform: translateY(8px) scale(.985);
+      opacity: 0;
+      animation: pop .16s ease forwards;
+    }
+    @keyframes pop{
+      to{ transform: translateY(0px) scale(1); opacity: 1; }
+    }
+    .lightboxTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 12px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+    .lightboxTitle{
+      font-weight: 900;
+      color: rgba(255,255,255,.92);
+      font-size: 14px;
+      letter-spacing:.2px;
+    }
+    .lightboxClose{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(6,12,30,.30);
+      color: rgba(255,255,255,.92);
+      border-radius: 14px;
+      padding: 10px 12px;
+      cursor:pointer;
+      font-weight: 900;
+      display:flex;
+      gap: 8px;
+      align-items:center;
+    }
+    .lightboxClose:hover{ border-color: rgba(124,92,255,.55); }
+    .lightboxBody{
+      padding: 12px;
+      display:grid;
+      gap: 10px;
+    }
+    .lightboxImgWrap{
+      border-radius: 18px;
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      max-height: 72vh;
+      display:grid;
+      place-items:center;
+    }
+    .lightboxImgWrap img{
+      width: 100%;
+      height: auto;
+      max-height: 72vh;
+      object-fit: contain;
+      display:block;
+    }
+    .lightboxMeta{
+      display:flex;
+      justify-content:space-between;
+      gap: 12px;
+      flex-wrap:wrap;
+      color: rgba(255,255,255,.76);
+      font-size: 12.5px;
+    }
+    .lightboxMeta a{
+      color: rgba(46,230,166,.95);
+      text-decoration: none;
+      border-bottom: 1px dotted rgba(46,230,166,.6);
+    }
+    .lightboxMeta a:hover{ filter: brightness(1.08); }
+
+    /* ====== INTRO (перед вопросом: фото + озвучка) ====== */
+    .introWrap{ margin-bottom: 14px; }
+    .introCard{
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(6,12,30,.32);
+      padding: 12px;
+      box-shadow: 0 14px 30px rgba(0,0,0,.18);
+    }
+    .introTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+    .introStep{
+      font-weight: 1000;
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+    .introContent{
+      padding-top: 12px;
+      display:grid;
+      grid-template-columns: 220px 1fr;
+      gap: 12px;
+      align-items:start;
+    }
+    @media (max-width: 720px){
+      .introContent{ grid-template-columns: 1fr; }
+    }
+    .introArt{
+      width: 220px;
+      height: 220px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.16);
+      background:
+        radial-gradient(80px 80px at 30% 30%, rgba(255,255,255,.22), transparent 60%),
+        linear-gradient(135deg, rgba(124,92,255,.22), rgba(46,230,166,.16));
+      box-shadow: 0 18px 40px rgba(0,0,0,.22);
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+      position:relative;
+    }
+    @media (max-width: 720px){
+      .introArt{ width: 100%; height: 240px; }
+    }
+    .introArt svg{ width: 210px; height: 210px; }
+    .introArt img.dinoImg{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      opacity:0;
+      transform: scale(1.02);
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .introArt.hasImg img.dinoImg{ opacity:1; transform: scale(1.0); }
+    .introArt.hasImg svg{ opacity:0; }
+    .introName{
+      font-weight: 1000;
+      font-size: 22px;
+      letter-spacing:.2px;
+    }
+    .introWhen{
+      margin-top: 6px;
+      color: rgba(255,255,255,.78);
+      font-size: 13.5px;
+      line-height: 1.25;
+    }
+    .introAbout{
+      margin-top: 10px;
+      color: rgba(255,255,255,.86);
+      line-height: 1.35;
+      font-size: 14px;
+    }
+
+    /* helper */
+    [hidden]{ display:none !important; }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"><span>🦖</span></div>
+        <div>
+          <h1>Дино-Баттл Квиз</h1>
+          <div class="subtitle">Кто победит? И могли ли они вообще встретиться во времени?</div>
+        </div>
+      </div>
+
+      <div class="pill" aria-live="polite">
+        <div class="k">СЧЁТ</div>
+        <div class="v" id="scorePill">0</div>
+        <div class="k">/ 10</div>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel" id="mainPanel">
+        <!-- dynamic content -->
+      </section>
+
+      <aside class="panel ladder" aria-label="Лестница вопросов">
+        <h2>Лестница уровней</h2>
+        <ol class="steps" id="ladder"></ol>
+        <div class="hint">Подсказка: можно отвечать клавишами <span class="kbd">A</span> <span class="kbd">B</span> <span class="kbd">C</span> <span class="kbd">D</span></div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <div class="lightboxCard" role="dialog" aria-modal="true" aria-label="Увеличенная картинка">
+      <div class="lightboxTop">
+        <div class="lightboxTitle" id="lightboxTitle">Картинка</div>
+        <button class="lightboxClose" id="lightboxClose" aria-label="Закрыть">
+          <span aria-hidden="true">✕</span> Закрыть
+        </button>
+      </div>
+      <div class="lightboxBody">
+        <div class="lightboxImgWrap">
+          <img id="lightboxImg" alt="Увеличенная картинка динозавра" />
+        </div>
+        <div class="lightboxMeta">
+          <div id="lightboxCaption"> </div>
+          <div><a id="lightboxSource" href="#" target="_blank" rel="noreferrer noopener" style="display:none">Источник (Wikimedia)</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/** ========== ДАННЫЕ ========== **/
+const dinos = {
+  trex: {
+    name: "Ти-Рекс", type: "theropod",
+    period: "Поздний мел", myaFrom: 68, myaTo: 66,
+    wiki: "Tyrannosaurus",
+    about: "Один из самых известных хищников. Огромные челюсти и мощные ноги делали его грозным охотником (и, возможно, иногда падальщиком).",
+    tags:["хищник","супер-укус"]
+  },
+  triceratops: {
+    name: "Трицератопс", type: "ceratopsian",
+    period: "Поздний мел", myaFrom: 68, myaTo: 66,
+    wiki: "Triceratops",
+    about: "Большой травоядный с тремя рогами и костяным «щитом» на голове. Мог защищаться от хищников, упираясь и бодая.",
+    tags:["травоядный","рога + щит"]
+  },
+
+  spino: {
+    name: "Спинозавр", type: "spinosaur",
+    period: "Ранний мел", myaFrom: 99, myaTo: 93,
+    wiki: "Spinosaurus",
+    about: "Крупный хищник, который много времени проводил у воды. Считается, что он отлично ловил рыбу и мог плавать лучше многих других динозавров.",
+    tags:["хищник","полуводный"]
+  },
+  giga: {
+    name: "Гиганотозавр", type: "theropod",
+    period: "Поздний мел", myaFrom: 99, myaTo: 97,
+    wiki: "Giganotosaurus",
+    about: "Один из гигантских хищников Южной Америки. Длинная голова и мощные мышцы помогали ему охотиться на больших травоядных.",
+    tags:["хищник","очень большой"]
+  },
+
+  // Рапторы часто рисуют с перьями. По просьбе — используем фото моделей/реконструкций без перьев.
+  velociraptor: {
+    name: "Велоцираптор", type: "raptor",
+    period: "Поздний мел", myaFrom: 75, myaTo: 71,
+    wiki: "Velociraptor",
+    imgOverride: "https://commons.wikimedia.org/wiki/Special:FilePath/Velociraptor_model.JPG",
+    about: "Небольшой быстрый хищник. Настоящий велоцираптор был меньше «киношного», но всё равно очень ловкий и опасный.",
+    tags:["хищник","быстрый"]
+  },
+  utahraptor: {
+    name: "Ютараптор", type: "raptor",
+    period: "Ранний мел", myaFrom: 126, myaTo: 121,
+    wiki: "Utahraptor",
+    imgOverride: "https://commons.wikimedia.org/wiki/Special:FilePath/Utahraptor_3.JPG",
+    about: "Самый крупный «раптор» из известных. Большой серповидный коготь на ноге помогал удерживать добычу.",
+    tags:["хищник","крупный раптор"]
+  },
+
+  stego: {
+    name: "Стегозавр", type: "stegosaur",
+    period: "Поздняя юра", myaFrom: 155, myaTo: 150,
+    wiki: "Stegosaurus",
+    about: "Травоядный с большими пластинами на спине и шипами на хвосте. Хвостом мог наносить очень опасные удары.",
+    tags:["травоядный","шипастый хвост"]
+  },
+  allo: {
+    name: "Аллозавр", type: "theropod",
+    period: "Поздняя юра", myaFrom: 155, myaTo: 145,
+    wiki: "Allosaurus",
+    about: "Один из главных хищников юрского периода. Считается, что он мог охотиться на больших травоядных, используя скорость и силу.",
+    tags:["хищник","охотник юры"]
+  },
+
+  brachio: {
+    name: "Брахиозавр", type: "sauropod",
+    period: "Поздняя юра", myaFrom: 154, myaTo: 150,
+    wiki: "Brachiosaurus",
+    about: "Гигант с очень длинной шеей и высокими плечами. Доставал листья там, где другим динозаврам было трудно.",
+    tags:["гигант","длинная шея"]
+  },
+  diplo: {
+    name: "Диплодок", type: "sauropod",
+    period: "Поздняя юра", myaFrom: 154, myaTo: 152,
+    wiki: "Diplodocus",
+    about: "Длинношеий травоядный с очень длинным хвостом. Хвост мог служить и балансиром, и «хлыстом» для защиты.",
+    tags:["гигант","хлыст-хвост"]
+  },
+
+  ankylo: {
+    name: "Анкилозавр", type: "ankylosaur",
+    period: "Поздний мел", myaFrom: 68, myaTo: 66,
+    wiki: "Ankylosaurus",
+    about: "Бронированный травоядный — почти как танк. Костяные пластины защищали спину, а хвост-булава мог ломать кости.",
+    tags:["броня","булава-хвост"]
+  },
+  carno: {
+    name: "Карнотавр", type: "theropod",
+    period: "Поздний мел", myaFrom: 72, myaTo: 69,
+    wiki: "Carnotaurus",
+    about: "Быстрый хищник с маленькими «рожками» над глазами. Его длинные ноги намекают на хорошую скорость.",
+    tags:["хищник","быстрый"]
+  },
+
+  parasauro: {
+    name: "Паразавролоф", type: "hadrosaur",
+    period: "Поздний мел", myaFrom: 76, myaTo: 73,
+    wiki: "Parasaurolophus",
+    about: "Травоядный «утконос» с большим гребнем-трубой. Возможно, гребень помогал издавать громкие звуки.",
+    tags:["травоядный","гребень-труба"]
+  },
+  iguanodon: {
+    name: "Игуанодон", type: "ornithopod",
+    period: "Ранний мел", myaFrom: 126, myaTo: 113,
+    wiki: "Iguanodon",
+    about: "Крупный травоядный с «шипом-пальцем» на руке. Мог ходить и на двух, и на четырёх ногах.",
+    tags:["травоядный","шип-палец"]
+  },
+
+  pachy: {
+    name: "Пахицефалозавр", type: "pachy",
+    period: "Поздний мел", myaFrom: 72, myaTo: 66,
+    wiki: "Pachycephalosaurus",
+    about: "Динозавр с очень толстым куполом на голове. Возможно, бодался с сородичами или использовал голову для защиты.",
+    tags:["крепкий лоб","таран"]
+  },
+
+  oviraptor: {
+    name: "Овираптор", type: "oviraptor",
+    period: "Поздний мел", myaFrom: 75, myaTo: 71,
+    wiki: "Oviraptor",
+    imgOverride: "https://commons.wikimedia.org/wiki/Special:FilePath/Oviraptor.jpg",
+    about: "Быстрый динозавр с клювом. Раньше думали, что он ворует яйца, но на самом деле мог заботиться о кладке.",
+    tags:["всёядный","быстрый"]
+  },
+
+  argentino: {
+    name: "Аргентинозавр", type: "sauropod",
+    period: "Поздний мел", myaFrom: 97, myaTo: 94,
+    wiki: "Argentinosaurus",
+    about: "Один из самых больших динозавров. Гигант-титан, которому лучше было держаться в стаде ради безопасности.",
+    tags:["титан","очень большой"]
+  },
+
+  therizino: {
+    name: "Теризинозавр", type: "therizino",
+    period: "Поздний мел", myaFrom: 70, myaTo: 66,
+    wiki: "Therizinosaurus",
+    imgOverride: "https://commons.wikimedia.org/wiki/Special:FilePath/Therizinosaurus_-.jpg",
+    about: "Очень необычный динозавр с огромными когтями. Скорее всего, был травоядным или всеядным и использовал когти для защиты и добычи еды.",
+    tags:["длинные когти","странный"]
+  },
+
+  dilo: {
+    name: "Дилофозавр", type: "theropod",
+    period: "Ранняя юра", myaFrom: 193, myaTo: 190,
+    wiki: "Dilophosaurus",
+    about: "Хищник ранней юры с двумя гребнями на голове. В кино ему придумывают «яд», но это фантазия — доказательств нет.",
+    tags:["хищник","быстрый"]
+  },
+
+  deinonychus: {
+    name: "Дейноних", type: "raptor",
+    period: "Ранний мел", myaFrom: 115, myaTo: 108,
+    wiki: "Deinonychus",
+    imgOverride: "https://commons.wikimedia.org/wiki/Special:FilePath/Deinonychus_model_Baltow.jpg",
+    about: "Сильный и ловкий хищник с большим серповидным когтем на ноге. Его изучение помогло учёным по-новому взглянуть на поведение динозавров.",
+    tags:["хищник","умный охотник"]
+  },
+};
+
+function rangesOverlap(aFrom, aTo, bFrom, bTo){
+  const latest = Math.max(aTo, bTo);
+  const earliest = Math.min(aFrom, bFrom);
+  return latest <= earliest;
+}
+
+const questions = [
+  { a: "trex", b: "triceratops", winner: "trex", canMeet: true,
+    story: "Трицератопс мог защищаться рогами и щитом, но Ти-Рекс сильнее в атаке. В лобовую схватку хищник рисковал бы, но в итоге, скорее всего, нашёл бы момент для решающего укуса."
+  },
+  { a: "spino", b: "giga", winner: "giga", canMeet: false,
+    story: "Они жили не в одно и то же время и на разных континентах. Если представить чудо-встречу на суше, Гиганотозавр был бы более «наземным бойцом» и имел бы преимущество в силовой драке."
+  },
+  { a: "velociraptor", b: "utahraptor", winner: "utahraptor", canMeet: false,
+    story: "Они разделены десятками миллионов лет. В выдуманной встрече Ютараптор намного крупнее и тяжелее, поэтому у него больше шансов победить в прямой схватке."
+  },
+  { a: "stego", b: "allo", winner: "stego", canMeet: true,
+    story: "Аллозавр был опасным охотником, но Стегозавр мог развернуться и ударить хвостом с шипами. Один точный удар по боку или ноге — и хищнику пришлось бы отступить."
+  },
+  { a: "brachio", b: "diplo", winner: "brachio", canMeet: true,
+    story: "Оба — гигантские травоядные из юры. В споре за место у деревьев Брахиозавр выше и тяжелее, поэтому, скорее всего, смог бы «выдавить» Диплодока, не доводя дело до серьёзной драки."
+  },
+  { a: "ankylo", b: "carno", winner: "ankylo", canMeet: false,
+    story: "Они жили в одно время, но на разных континентах. В теоретическом бою Анкилозавр — как танк: броня и хвост-булава. Карнотавр мог бы пытаться кружить, но один удар булавой — и всё решено."
+  },
+  { a: "parasauro", b: "iguanodon", winner: "iguanodon", canMeet: false,
+    story: "Паразавролоф и Игуанодон разделены временем. Если представить встречу, у Игуанодона есть «шип-палец» — хороший защитный приём, поэтому он вероятнее выйдет победителем в конфликте."
+  },
+  { a: "pachy", b: "oviraptor", winner: "pachy", canMeet: true,
+    story: "По времени они могли жить примерно одновременно. Овираптор быстрый, но Пахицефалозавр умеет бодаться крепким «куполом» головы. В тесной драке таран даёт ему преимущество."
+  },
+  { a: "argentino", b: "therizino", winner: "argentino", canMeet: false,
+    story: "Они не пересекались по времени. В фантазийной встрече Аргентинозавр настолько огромен, что Теризинозавру лучше держаться подальше: гигант мог бы просто оттолкнуть его массой и силой."
+  },
+  { a: "dilo", b: "deinonychus", winner: "deinonychus", canMeet: false,
+    story: "Их разделяют миллионы лет. Если представить бой, Дейноних более «приспособлен» к ближней охоте: мощные лапы и опасный коготь на ноге дают ему хорошие шансы победить."
+  },
+];
+
+/** ========== ГРАФИКА: ПРОСТЫЕ SVG-КАРТИНКИ ========== **/
+function hashCode(str){
+  let h = 0;
+  for (let i=0;i<str.length;i++){
+    h = (h<<5) - h + str.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+function colorFromName(name){
+  const h = hashCode(name) % 360;
+  return {
+    body: `hsl(${h} 78% 55%)`,
+    belly: `hsl(${(h+18)%360} 78% 70%)`,
+    spot: `hsl(${(h+200)%360} 70% 60%)`
+  };
+}
+
+function svgDino(type, colors){
+  const {body, belly, spot} = colors;
+
+  const common = (inner) => `
+    <svg viewBox="0 0 100 100" role="img" aria-label="Картинка динозавра">
+      <defs>
+        <filter id="s" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="rgba(0,0,0,.35)"/>
+        </filter>
+      </defs>
+      <g filter="url(#s)">${inner}</g>
+    </svg>
+  `;
+
+  if(type === "sauropod"){
+    return common(`
+      <ellipse cx="46" cy="60" rx="26" ry="18" fill="${body}"/>
+      <ellipse cx="52" cy="64" rx="16" ry="10" fill="${belly}" opacity=".9"/>
+      <path d="M54 54 C60 38, 74 26, 78 18 C81 13, 86 18, 83 24 C78 34, 72 46, 64 60" fill="${body}"/>
+      <circle cx="80" cy="18" r="10" fill="${body}"/>
+      <circle cx="83" cy="17" r="2.2" fill="rgba(0,0,0,.65)"/>
+      <path d="M30 68 C20 78, 20 86, 22 90" stroke="${body}" stroke-width="10" stroke-linecap="round" fill="none"/>
+      <path d="M42 76 v14" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M58 76 v14" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <circle cx="34" cy="58" r="3.5" fill="${spot}" opacity=".85"/>
+      <circle cx="42" cy="52" r="2.8" fill="${spot}" opacity=".8"/>
+    `);
+  }
+
+  if(type === "ceratopsian"){
+    return common(`
+      <ellipse cx="50" cy="62" rx="28" ry="18" fill="${body}"/>
+      <ellipse cx="53" cy="66" rx="16" ry="10" fill="${belly}" opacity=".9"/>
+      <circle cx="74" cy="56" r="14" fill="${body}"/>
+      <path d="M66 44 C70 36, 78 34, 84 40 C86 42, 86 46, 84 49 C80 54, 74 54, 70 52" fill="${spot}" opacity=".9"/>
+      <path d="M78 44 L86 34" stroke="${belly}" stroke-width="5" stroke-linecap="round"/>
+      <path d="M72 46 L80 38" stroke="${belly}" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="78" cy="55" r="2.2" fill="rgba(0,0,0,.65)"/>
+      <path d="M22 68 v16" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M40 72 v14" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M60 72 v14" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M20 58 C14 60, 12 62, 10 66" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none" opacity=".9"/>
+    `);
+  }
+
+  if(type === "stegosaur"){
+    return common(`
+      <ellipse cx="48" cy="64" rx="30" ry="18" fill="${body}"/>
+      <ellipse cx="52" cy="66" rx="16" ry="10" fill="${belly}" opacity=".9"/>
+      <circle cx="74" cy="58" r="10" fill="${body}"/>
+      <circle cx="77" cy="57" r="2" fill="rgba(0,0,0,.65)"/>
+      <path d="M62 48 l6 -12 l6 12 z" fill="${spot}"/>
+      <path d="M52 46 l6 -12 l6 12 z" fill="${spot}" opacity=".95"/>
+      <path d="M42 48 l6 -12 l6 12 z" fill="${spot}" opacity=".9"/>
+      <path d="M32 52 l6 -12 l6 12 z" fill="${spot}" opacity=".85"/>
+      <path d="M26 68 v16" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M44 72 v14" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M60 72 v14" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M20 62 C12 70, 10 74, 10 78" stroke="${body}" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <path d="M10 78 l-8 6" stroke="${spot}" stroke-width="4" stroke-linecap="round"/>
+      <path d="M12 76 l-10 2" stroke="${spot}" stroke-width="4" stroke-linecap="round"/>
+    `);
+  }
+
+  if(type === "ankylosaur"){
+    return common(`
+      <ellipse cx="50" cy="64" rx="30" ry="18" fill="${body}"/>
+      <ellipse cx="50" cy="64" rx="22" ry="12" fill="${belly}" opacity=".85"/>
+      <circle cx="78" cy="60" r="10" fill="${body}"/>
+      <circle cx="81" cy="59" r="2" fill="rgba(0,0,0,.65)"/>
+      <circle cx="38" cy="58" r="3.2" fill="${spot}" opacity=".9"/>
+      <circle cx="46" cy="54" r="2.8" fill="${spot}" opacity=".85"/>
+      <circle cx="55" cy="56" r="2.6" fill="${spot}" opacity=".8"/>
+      <circle cx="62" cy="60" r="2.8" fill="${spot}" opacity=".78"/>
+      <path d="M24 70 v14" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M42 72 v14" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M58 72 v14" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M18 62 C10 70, 10 78, 18 84" stroke="${body}" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <circle cx="20" cy="85" r="6" fill="${spot}" opacity=".9"/>
+    `);
+  }
+
+  if(type === "hadrosaur"){
+    return common(`
+      <ellipse cx="48" cy="64" rx="28" ry="18" fill="${body}"/>
+      <ellipse cx="52" cy="66" rx="16" ry="10" fill="${belly}" opacity=".9"/>
+      <circle cx="74" cy="56" r="12" fill="${body}"/>
+      <path d="M74 40 C66 40, 64 54, 74 54 C82 54, 84 44, 74 40" fill="${spot}" opacity=".85"/>
+      <circle cx="78" cy="55" r="2.2" fill="rgba(0,0,0,.65)"/>
+      <path d="M30 70 v16" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M48 72 v14" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M62 72 v14" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M18 66 C10 74, 10 82, 16 88" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
+    `);
+  }
+
+  if(type === "pachy"){
+    return common(`
+      <ellipse cx="48" cy="64" rx="28" ry="18" fill="${body}"/>
+      <ellipse cx="52" cy="66" rx="16" ry="10" fill="${belly}" opacity=".9"/>
+      <circle cx="74" cy="58" r="11" fill="${body}"/>
+      <path d="M74 48 C66 48, 64 60, 74 60 C82 60, 84 48, 74 48" fill="${spot}" opacity=".9"/>
+      <circle cx="78" cy="57" r="2.2" fill="rgba(0,0,0,.65)"/>
+      <path d="M30 70 v16" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M48 72 v14" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M62 72 v14" stroke="${body}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M18 66 C10 74, 10 82, 16 88" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
+    `);
+  }
+
+  if(type === "raptor"){
+    return common(`
+      <ellipse cx="48" cy="66" rx="24" ry="14" fill="${body}"/>
+      <ellipse cx="52" cy="68" rx="14" ry="8" fill="${belly}" opacity=".9"/>
+      <circle cx="72" cy="56" r="12" fill="${body}"/>
+      <circle cx="76" cy="55" r="2.2" fill="rgba(0,0,0,.65)"/>
+      <path d="M64 58 C68 62, 74 62, 78 60" stroke="${belly}" stroke-width="4" stroke-linecap="round"/>
+      <path d="M28 72 C22 76, 22 86, 28 90" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <path d="M40 74 v16" stroke="${body}" stroke-width="7" stroke-linecap="round"/>
+      <path d="M56 74 v16" stroke="${body}" stroke-width="7" stroke-linecap="round"/>
+      <path d="M56 90 q6 0 6 -6" stroke="${spot}" stroke-width="4" stroke-linecap="round" fill="none"/>
+      <path d="M22 60 C12 54, 10 46, 14 40" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <circle cx="44" cy="60" r="2.5" fill="${spot}" opacity=".85"/>
+      <circle cx="50" cy="56" r="2.1" fill="${spot}" opacity=".82"/>
+    `);
+  }
+
+  if(type === "therizino"){
+    return common(`
+      <ellipse cx="48" cy="66" rx="24" ry="14" fill="${body}"/>
+      <ellipse cx="52" cy="68" rx="14" ry="8" fill="${belly}" opacity=".9"/>
+      <circle cx="70" cy="56" r="11" fill="${body}"/>
+      <circle cx="73" cy="55" r="2.1" fill="rgba(0,0,0,.65)"/>
+      <path d="M44 64 C44 52, 34 48, 28 54" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <path d="M26 54 l-10 10" stroke="${spot}" stroke-width="4" stroke-linecap="round"/>
+      <path d="M30 56 l-12 14" stroke="${spot}" stroke-width="4" stroke-linecap="round"/>
+      <path d="M34 58 l-12 16" stroke="${spot}" stroke-width="4" stroke-linecap="round"/>
+      <path d="M36 74 v16" stroke="${body}" stroke-width="7" stroke-linecap="round"/>
+      <path d="M54 74 v16" stroke="${body}" stroke-width="7" stroke-linecap="round"/>
+      <path d="M20 70 C12 78, 12 86, 18 92" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
+    `);
+  }
+
+  if(type === "oviraptor"){
+    return common(`
+      <ellipse cx="48" cy="66" rx="24" ry="14" fill="${body}"/>
+      <ellipse cx="52" cy="68" rx="14" ry="8" fill="${belly}" opacity=".9"/>
+      <circle cx="70" cy="56" r="11" fill="${body}"/>
+      <path d="M74 56 C80 58, 82 62, 78 64 C74 66, 70 64, 70 60" fill="${spot}" opacity=".9"/>
+      <circle cx="72" cy="54" r="2.1" fill="rgba(0,0,0,.65)"/>
+      <path d="M68 44 C66 38, 72 34, 78 38" stroke="${spot}" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <path d="M36 74 v16" stroke="${body}" stroke-width="7" stroke-linecap="round"/>
+      <path d="M54 74 v16" stroke="${body}" stroke-width="7" stroke-linecap="round"/>
+      <path d="M20 70 C12 78, 12 86, 18 92" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <circle cx="44" cy="60" r="2.4" fill="${spot}" opacity=".85"/>
+      <circle cx="50" cy="56" r="2.0" fill="${spot}" opacity=".82"/>
+    `);
+  }
+
+  if(type === "spinosaur"){
+    return common(`
+      <ellipse cx="46" cy="66" rx="24" ry="14" fill="${body}"/>
+      <ellipse cx="50" cy="68" rx="14" ry="8" fill="${belly}" opacity=".9"/>
+      <circle cx="70" cy="56" r="11" fill="${body}"/>
+      <circle cx="73" cy="55" r="2.1" fill="rgba(0,0,0,.65)"/>
+      <path d="M40 50 l6 -14 l6 14 z" fill="${spot}" opacity=".95"/>
+      <path d="M32 52 l6 -14 l6 14 z" fill="${spot}" opacity=".9"/>
+      <path d="M24 56 l6 -14 l6 14 z" fill="${spot}" opacity=".85"/>
+      <path d="M36 74 v16" stroke="${body}" stroke-width="7" stroke-linecap="round"/>
+      <path d="M54 74 v16" stroke="${body}" stroke-width="7" stroke-linecap="round"/>
+      <path d="M18 70 C10 78, 10 86, 16 92" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
+    `);
+  }
+
+  return common(`
+    <ellipse cx="48" cy="66" rx="24" ry="14" fill="${body}"/>
+    <ellipse cx="52" cy="68" rx="14" ry="8" fill="${belly}" opacity=".9"/>
+    <circle cx="72" cy="56" r="12" fill="${body}"/>
+    <circle cx="76" cy="55" r="2.2" fill="rgba(0,0,0,.65)"/>
+    <path d="M64 58 C68 62, 74 62, 78 60" stroke="${belly}" stroke-width="4" stroke-linecap="round"/>
+    <path d="M42 62 C42 54, 36 52, 32 56" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <path d="M34 58 l-10 8" stroke="${spot}" stroke-width="4" stroke-linecap="round"/>
+    <path d="M36 74 v16" stroke="${body}" stroke-width="7" stroke-linecap="round"/>
+    <path d="M54 74 v16" stroke="${body}" stroke-width="7" stroke-linecap="round"/>
+    <path d="M20 70 C12 78, 12 86, 18 92" stroke="${body}" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <circle cx="44" cy="60" r="2.5" fill="${spot}" opacity=".85"/>
+    <circle cx="50" cy="56" r="2.1" fill="${spot}" opacity=".82"/>
+  `);
+}
+
+/** ========== КАРТИНКИ ИЗ WIKIMEDIA COMMONS (ТОЛЬКО «ЖИВЫЕ» РЕКОНСТРУКЦИИ) ========== **/
+const imageCache = new Map();
+
+function looksBadForThisGame(s){
+  const t = (s || "").toLowerCase();
+  const bad = [
+    "skeleton","skeletal","skull","cranium","bone","bones","fossil","cast","mount",
+    "specimen","holotype","type specimen","jaw","vertebra","rib","pelvis","femur",
+    "trackway","footprint","ichnite"
+  ];
+  const badFeathers = ["feather","feathered","plumage","plumed"];
+  return bad.some(w => t.includes(w)) || badFeathers.some(w => t.includes(w));
+}
+
+function scoreNice(t){
+  t = (t || "").toLowerCase();
+  let s = 0;
+  const good = [
+    ["life restoration", 12],
+    ["restoration", 9],
+    ["life reconstruction", 10],
+    ["reconstruction", 7],
+    ["paleoart", 8],
+    ["artist", 4],
+    ["illustration", 5],
+    ["painting", 5],
+    ["art", 2],
+    ["model", 6],
+    ["animatronic", 6],
+    ["statue", 4],
+    ["sculpture", 4]
+  ];
+  for(const [k, w] of good) if(t.includes(k)) s += w;
+  if(t.includes(".jpg") || t.includes(".jpeg") || t.includes(".png")) s += 1;
+  return s;
+}
+
+async function searchCommonsImage(query){
+  const key = "commons:" + query;
+  if(imageCache.has(key)) return imageCache.get(key);
+
+  const api = "https://commons.wikimedia.org/w/api.php?"
+    + new URLSearchParams({
+      action: "query",
+      format: "json",
+      origin: "*",
+      generator: "search",
+      gsrnamespace: "6",
+      gsrlimit: "18",
+      gsrsearch: query,
+      prop: "imageinfo|categories",
+      iiprop: "url",
+      cllimit: "20"
+    }).toString();
+
+  const res = await fetch(api, { headers: { "accept": "application/json" } });
+  if(!res.ok) throw new Error("commons fetch failed");
+  const data = await res.json();
+
+  const pages = data?.query?.pages || {};
+  const items = Object.values(pages)
+    .map(p => ({
+      title: p.title || "",
+      url: p?.imageinfo?.[0]?.url || "",
+      cats: (p.categories || []).map(c => c.title || "")
+    }))
+    .filter(x => x.url && x.title);
+
+  let best = null;
+  let bestScore = -999;
+
+  for(const it of items){
+    const bad =
+      looksBadForThisGame(it.title) ||
+      looksBadForThisGame(it.url) ||
+      (it.cats || []).some(c => looksBadForThisGame(c));
+    if(bad) continue;
+
+    let s = scoreNice(it.title);
+    for(const c of (it.cats || [])) s += scoreNice(c) * 0.35;
+
+    const techBad = ["diagram", "silhouette", "outline"];
+    if(techBad.some(w => (it.title || "").toLowerCase().includes(w))) s -= 2;
+
+    if(s > bestScore){
+      bestScore = s;
+      best = it;
+    }
+  }
+
+  const result = best ? { url: best.url, title: best.title } : null;
+  imageCache.set(key, result);
+  return result;
+}
+
+function commonsFilePageFromTitleOrUrl(title, url){
+  if(title && title.toLowerCase().startsWith("file:")){
+    return "https://commons.wikimedia.org/wiki/" + title.replaceAll(" ", "_");
+  }
+  try{
+    const u = new URL(url);
+    const filename = decodeURIComponent(u.pathname.split("/").pop() || "");
+    if(filename) return "https://commons.wikimedia.org/wiki/File:" + filename.replaceAll(" ", "_");
+  }catch(e){}
+  return null;
+}
+
+async function getDinoImage(dinoId){
+  const d = dinos[dinoId];
+  if(!d) return null;
+
+  if(d.imgOverride){
+    return { url: d.imgOverride, title: "" };
+  }
+
+  const base = d.wiki || d.name;
+  const queries = [
+    `${base} life restoration`,
+    `${base} restoration`,
+    `${base} life reconstruction`,
+    `${base} paleoart`,
+    `${base} reconstruction`,
+    `${base} model dinosaur`,
+    `${base} illustration`
+  ];
+
+  for(const q of queries){
+    try{
+      const found = await searchCommonsImage(q);
+      if(found && found.url) return found;
+    }catch(e){}
+  }
+  return null;
+}
+
+function setCardImage(imgId, foundObj, caption){
+  const img = document.getElementById(imgId);
+  if(!img) return;
+
+  if(!foundObj || !foundObj.url){
+    img.style.display = "none";
+    img.removeAttribute("src");
+    img.dataset.full = "";
+    img.dataset.source = "";
+    img.dataset.caption = caption || "";
+    return;
+  }
+
+  const src = foundObj.url;
+  const sourcePage = commonsFilePageFromTitleOrUrl(foundObj.title, src);
+
+  img.style.display = "block";
+  img.src = src;
+  img.dataset.full = src;
+  img.dataset.source = sourcePage || "";
+  img.dataset.caption = caption || "";
+
+  img.onload = () => {
+    const art = img.closest(".dinoArt");
+    if(art) art.classList.add("hasImg");
+  };
+  img.onerror = () => {
+    img.removeAttribute("src");
+    img.style.display = "none";
+    img.dataset.full = "";
+    img.dataset.source = "";
+  };
+}
+
+async function loadDinoCardImage(imgId, dinoId){
+  const img = document.getElementById(imgId);
+  if(img){
+    img.style.display = "none";
+    const art = img.closest(".dinoArt");
+    if(art) art.classList.remove("hasImg");
+  }
+  const found = await getDinoImage(dinoId);
+  const d = dinos[dinoId];
+  setCardImage(imgId, found, d?.name || "");
+}
+
+/** ========== ЛОГИКА ИГРЫ ========== **/
+const state = {
+  idx: -1,
+  score: 0,
+  locked: false,
+  history: []
+};
+
+const mainPanel = document.getElementById("mainPanel");
+const ladderEl = document.getElementById("ladder");
+const scorePill = document.getElementById("scorePill");
+const confettiEl = document.getElementById("confetti");
+
+function buildLadder(){
+  ladderEl.innerHTML = "";
+  for(let i=1;i<=questions.length;i++){
+    const li = document.createElement("li");
+    li.className = "step";
+    li.innerHTML = `<span class="n">#${i}</span><span>Уровень ${i}</span><span class="egg"></span>`;
+    ladderEl.appendChild(li);
+  }
+}
+
+function setLadder(){
+  const items = ladderEl.querySelectorAll(".step");
+  items.forEach((el, i)=>{
+    const level = i+1;
+    const current = state.idx+1;
+    el.classList.toggle("active", level === current);
+    el.classList.toggle("done", level < current);
+  });
+}
+
+function optionKeyFor(canMeet, winnerIsA){
+  if(canMeet && winnerIsA) return "A";
+  if(canMeet && !winnerIsA) return "B";
+  if(!canMeet && winnerIsA) return "C";
+  return "D";
+}
+
+function currentQuestion(){
+  return questions[state.idx];
+}
+
+/** ========== ОЗВУЧКА + INTRO ПЕРЕД КАЖДЫМ ВОПРОСОМ ========== **/
+let introToken = 0;
+let ruVoice = null;
+
+function pickRuVoice(){
+  if(!("speechSynthesis" in window)) return;
+  const vs = speechSynthesis.getVoices?.() || [];
+  ruVoice = vs.find(v => (v.lang || "").toLowerCase().startsWith("ru")) || null;
+}
+if("speechSynthesis" in window){
+  pickRuVoice();
+  speechSynthesis.onvoiceschanged = pickRuVoice;
+}
+
+function cancelSpeech(){
+  try{ if("speechSynthesis" in window) speechSynthesis.cancel(); }catch(e){}
+}
+
+function speakRU(text){
+  return new Promise(resolve => {
+    if(!("speechSynthesis" in window)) return resolve();
+    pickRuVoice();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ru-RU";
+    if(ruVoice) u.voice = ruVoice;
+    u.rate = 1.0;
+    u.pitch = 1.0;
+    u.onend = () => resolve();
+    u.onerror = () => resolve();
+    try{ speechSynthesis.speak(u); }catch(e){ resolve(); }
+  });
+}
+
+function buildSpeakText(d){
+  return `${d.name}. ${d.about} Период: ${d.period}. Примерно ${d.myaFrom}–${d.myaTo} миллионов лет назад.`;
+}
+
+function abortIntro(){
+  introToken++;
+  cancelSpeech();
+}
+
+async function setIntroCard(dinoId, colors, label){
+  const d = dinos[dinoId];
+
+  const stepEl = document.getElementById("introStep");
+  const nameEl = document.getElementById("introName");
+  const whenEl = document.getElementById("introWhen");
+  const aboutEl = document.getElementById("introAbout");
+  const svgHost = document.getElementById("introSvg");
+  const img = document.getElementById("introImg");
+  const art = document.getElementById("introArt");
+
+  if(stepEl) stepEl.textContent = label;
+  if(nameEl) nameEl.textContent = d.name;
+  if(whenEl) whenEl.textContent = `Когда жил: ${d.period} • примерно ${d.myaFrom}–${d.myaTo} млн лет назад`;
+  if(aboutEl) aboutEl.textContent = d.about;
+
+  if(svgHost) svgHost.innerHTML = svgDino(d.type, colors);
+
+  if(art) art.classList.remove("hasImg");
+  if(img){
+    img.style.display = "none";
+    img.removeAttribute("src");
+  }
+
+  const found = await getDinoImage(dinoId);
+  if(found?.url && img){
+    img.style.display = "block";
+    img.src = found.url;
+    await new Promise(res => { img.onload = res; img.onerror = res; });
+    if(img.naturalWidth > 0 && art) art.classList.add("hasImg");
+  }
+}
+
+async function runIntroSequence(q, colorsA, colorsB){
+  const my = ++introToken;
+  cancelSpeech();
+
+  const introWrap = document.getElementById("introWrap");
+  const qaWrap = document.getElementById("qaWrap");
+  const skipBtn = document.getElementById("skipIntroBtn");
+
+  if(!introWrap || !qaWrap || !skipBtn){
+    disableAnswers(false);
+    state.locked = false;
+    return;
+  }
+
+  introWrap.hidden = false;
+  qaWrap.hidden = true;
+
+  disableAnswers(true);
+  state.locked = true;
+
+  skipBtn.onclick = () => {
+    abortIntro();
+    introWrap.hidden = true;
+    qaWrap.hidden = false;
+    disableAnswers(false);
+    state.locked = false;
+  };
+
+  await setIntroCard(q.a, colorsA, "Динозавр 1 из 2");
+  if(my !== introToken) return;
+  await speakRU(buildSpeakText(dinos[q.a]));
+  if(my !== introToken) return;
+
+  await setIntroCard(q.b, colorsB, "Динозавр 2 из 2");
+  if(my !== introToken) return;
+  await speakRU(buildSpeakText(dinos[q.b]));
+  if(my !== introToken) return;
+
+  introWrap.hidden = true;
+  qaWrap.hidden = false;
+  disableAnswers(false);
+  state.locked = false;
+}
+
+function renderStart(){
+  scorePill.textContent = state.score;
+  mainPanel.innerHTML = `
+    <div class="screen">
+      <div class="bigTitle">Кто выиграет ДИНО-битву? 🦖💥🦕</div>
+      <p class="bigText">
+        Тебя ждёт <b>10</b> вопросов. В каждом — два динозавра.
+        Нужно выбрать вариант: <b>могли ли они встретиться во времени</b> и <b>кто победит</b>.
+        За правильный ответ — <b>1 балл</b>.
+      </p>
+      <div class="startRow">
+        <button class="btn primary" id="startBtn">
+          <span class="key">▶</span>
+          <span>
+            <div class="txt">Начать игру</div>
+            <div class="sub">Готов? Поехали!</div>
+          </span>
+        </button>
+        <button class="btn ghost" id="howBtn">
+          <span class="key">?</span>
+          <span>
+            <div class="txt">Как играть</div>
+            <div class="sub">4 варианта: может/не может + кто победит</div>
+          </span>
+        </button>
+      </div>
+      <div class="hint">Подсказка: картинки берём из Wikimedia Commons (только «живые» реконструкции, без скелетов; если нет интернета — будут иконки). Отвечай кнопками или клавишами <span class="kbd">A</span> <span class="kbd">B</span> <span class="kbd">C</span> <span class="kbd">D</span>.</div>
+    </div>
+  `;
+
+  document.getElementById("startBtn").addEventListener("click", startGame);
+  document.getElementById("howBtn").addEventListener("click", () => {
+    alert("В каждом вопросе выбирай один из 4 вариантов:\n\nA — Может произойти, победит динозавр слева\nB — Может произойти, победит динозавр справа\nC — Не может произойти, но победит динозавр слева\nD — Не может произойти, но победит динозавр справа\n\nЗа правильный ответ — 1 балл.");
+  });
+}
+
+function renderQuestion(){
+  abortIntro();
+  state.locked = true;
+
+  const q = currentQuestion();
+  const A = dinos[q.a];
+  const B = dinos[q.b];
+
+  const colorsA = colorFromName(A.name);
+  const colorsB = colorFromName(B.name);
+
+  const title = `Вопрос ${state.idx+1} из ${questions.length}`;
+  const qText = `Кто победит в теоретической битве — и могла ли битва произойти по времени?`;
+
+  mainPanel.innerHTML = `
+    <div class="panelHead">
+      <div>
+        <div class="qTitle">${title}</div>
+        <div class="qText">${qText}</div>
+      </div>
+      <div class="badge">Сначала знакомимся 👇</div>
+    </div>
+
+    <div class="panelBody">
+
+      <!-- INTRO -->
+      <div class="introWrap" id="introWrap">
+        <div class="introCard">
+          <div class="introTop">
+            <div class="introStep"><span class="bubble good" style="width:34px;height:34px">🔊</span><span id="introStep">Знакомимся…</span></div>
+            <button class="btn ghost" id="skipIntroBtn" type="button" style="min-height:auto;padding:10px 12px">
+              <span class="key">⏭</span>
+              <span>
+                <div class="txt">Пропустить</div>
+                <div class="sub">Сразу к ответам</div>
+              </span>
+            </button>
+          </div>
+          <div class="introContent">
+            <div class="introArt" id="introArt" aria-hidden="true">
+              <div class="shine"></div>
+              <img class="dinoImg" id="introImg" alt="Картинка динозавра" loading="lazy" decoding="async"/>
+              <div id="introSvg"></div>
+            </div>
+            <div>
+              <div class="introName" id="introName"></div>
+              <div class="introWhen" id="introWhen"></div>
+              <div class="introAbout" id="introAbout"></div>
+              <div class="hint">Если звук не запускается — нажми «Пропустить», а потом снова «Начать заново» (браузеры иногда требуют клика).</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QA -->
+      <div id="qaWrap" hidden>
+        <div class="dinos" aria-label="Сравнение динозавров">
+          <article class="dinoCard" id="cardA">
+            <div class="top">
+              <div class="dinoArt" aria-hidden="true">
+                <div class="shine"></div>
+                <button class="zoomBtn" type="button" aria-label="Увеличить">🔍</button>
+                <img class="dinoImg" id="imgA" alt="Картинка: ${A.name}" loading="lazy" decoding="async"/>
+                ${svgDino(A.type, colorsA)}
+              </div>
+              <div class="dinoMeta">
+                <div class="name">${A.name}</div>
+                <div class="when"><span>Когда жил:</span> ${A.period} • примерно ${A.myaFrom}–${A.myaTo} млн лет назад</div>
+              </div>
+            </div>
+            <div class="bottom">
+              ${A.tags.map(t => `<span class="tag"><span class="dot" style="background:${colorsA.spot}"></span>${t}</span>`).join("")}
+              <div class="bio">${A.about}</div>
+            </div>
+          </article>
+
+          <div class="vs" aria-hidden="true">VS</div>
+
+          <article class="dinoCard" id="cardB">
+            <div class="top">
+              <div class="dinoArt" aria-hidden="true">
+                <div class="shine"></div>
+                <button class="zoomBtn" type="button" aria-label="Увеличить">🔍</button>
+                <img class="dinoImg" id="imgB" alt="Картинка: ${B.name}" loading="lazy" decoding="async"/>
+                ${svgDino(B.type, colorsB)}
+              </div>
+              <div class="dinoMeta">
+                <div class="name">${B.name}</div>
+                <div class="when"><span>Когда жил:</span> ${B.period} • примерно ${B.myaFrom}–${B.myaTo} млн лет назад</div>
+              </div>
+            </div>
+            <div class="bottom">
+              ${B.tags.map(t => `<span class="tag"><span class="dot" style="background:${colorsB.spot}"></span>${t}</span>`).join("")}
+              <div class="bio">${B.about}</div>
+            </div>
+          </article>
+        </div>
+
+        <div class="answers" role="group" aria-label="Варианты ответа">
+          ${renderAnswerButtons(A.name, B.name)}
+        </div>
+
+        <div class="feedback" id="feedback" aria-live="polite"></div>
+
+        <div class="actions">
+          <button class="btn ghost" id="restartBtn">
+            <span class="key">↺</span>
+            <span>
+              <div class="txt">Начать заново</div>
+              <div class="sub">Сбросить прогресс</div>
+            </span>
+          </button>
+
+          <button class="btn primary" id="nextBtn" disabled>
+            <span class="key">→</span>
+            <span>
+              <div class="txt">Дальше</div>
+              <div class="sub">Следующий вопрос</div>
+            </span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  `;
+
+  document.getElementById("restartBtn").addEventListener("click", resetGame);
+  document.getElementById("nextBtn").addEventListener("click", nextQuestion);
+
+  for(const key of ["A","B","C","D"]){
+    document.getElementById(`btn${key}`).addEventListener("click", () => pick(key));
+  }
+
+  setLadder();
+  scorePill.textContent = state.score;
+
+  loadDinoCardImage("imgA", q.a);
+  loadDinoCardImage("imgB", q.b);
+  attachZoomHandlers();
+
+  // запускаем последовательность: динозавр 1 (фото+озвучка) -> динозавр 2 -> потом ответы
+  runIntroSequence(q, colorsA, colorsB);
+}
+
+function renderAnswerButtons(nameA, nameB){
+  const mk = (key, title, sub) => `
+    <button class="btn" id="btn${key}">
+      <span class="key">${key}</span>
+      <span>
+        <div class="txt">${title}</div>
+        <div class="sub">${sub}</div>
+      </span>
+    </button>
+  `;
+
+  return [
+    mk("A", `Может произойти — победит ${nameA}`, "Они жили примерно в одно время, и левый выигрывает"),
+    mk("B", `Может произойти — победит ${nameB}`, "Они жили примерно в одно время, и правый выигрывает"),
+    mk("C", `Не может произойти — победит ${nameA}`, "Жили в разное время, но в фантазии левый выигрывает"),
+    mk("D", `Не может произойти — победит ${nameB}`, "Жили в разное время, но в фантазии правый выигрывает"),
+  ].join("");
+}
+
+function disableAnswers(disabled=true){
+  for(const key of ["A","B","C","D"]){
+    const b = document.getElementById(`btn${key}`);
+    if(b) b.disabled = disabled;
+  }
+}
+
+function pick(key){
+  if(state.locked) return;
+  state.locked = true;
+
+  const q = currentQuestion();
+  const A = dinos[q.a];
+  const B = dinos[q.b];
+
+  const winnerIsA = q.winner === q.a;
+  const correctKey = optionKeyFor(q.canMeet, winnerIsA);
+
+  const isCorrect = key === correctKey;
+  if(isCorrect){
+    state.score += 1;
+    popConfetti();
+  }
+
+  state.history.push({
+    qIdx: state.idx,
+    pickedKey: key,
+    correctKey,
+    isCorrect
+  });
+
+  disableAnswers(true);
+  for(const k of ["A","B","C","D"]){
+    const btn = document.getElementById(`btn${k}`);
+    btn.classList.remove("good","bad");
+  }
+  document.getElementById(`btn${correctKey}`).classList.add("good");
+  if(!isCorrect) document.getElementById(`btn${key}`).classList.add("bad");
+
+  const fb = document.getElementById("feedback");
+  const icon = isCorrect ? "✅" : "❌";
+  fb.className = "feedback show";
+
+  const correctText = explainOptionText(correctKey, A.name, B.name);
+  const timeOverlap = rangesOverlap(A.myaFrom, A.myaTo, B.myaFrom, B.myaTo);
+  const timeNote = q.canMeet
+    ? `По времени они <b>могли</b> существовать примерно одновременно. (Пересечение диапазонов: ${timeOverlap ? "да" : "не точно"}, но в игре используем «могли».)`
+    : `По времени они <b>не могли</b> встретиться: жили в разные времена.`;
+
+  fb.innerHTML = `
+    <div class="line1">
+      <span class="bubble ${isCorrect ? "good" : "bad"}">${icon}</span>
+      <span>${isCorrect ? "Верно! +1 балл" : "Почти! Балл не начислен"}</span>
+    </div>
+    <div class="explain">
+      ${timeNote}<br><br>
+      <b>Что было бы в битве:</b> ${q.story}
+    </div>
+    <div class="correct"><b>Правильный вариант:</b> ${correctKey} — ${correctText}</div>
+  `;
+
+  scorePill.textContent = state.score;
+  document.getElementById("nextBtn").disabled = false;
+  setLadder();
+}
+
+function explainOptionText(key, nameA, nameB){
+  const map = {
+    "A": `Может произойти — победит ${nameA}`,
+    "B": `Может произойти — победит ${nameB}`,
+    "C": `Не может произойти — победит ${nameA}`,
+    "D": `Не может произойти — победит ${nameB}`,
+  };
+  return map[key];
+}
+
+function nextQuestion(){
+  if(state.idx >= questions.length - 1){
+    renderEnd();
+    return;
+  }
+  state.idx += 1;
+  renderQuestion();
+}
+
+function startGame(){
+  abortIntro();
+  state.idx = 0;
+  state.score = 0;
+  state.locked = false;
+  state.history = [];
+  buildLadder();
+  renderQuestion();
+}
+
+function resetGame(){
+  abortIntro();
+  state.idx = -1;
+  state.score = 0;
+  state.locked = false;
+  state.history = [];
+  buildLadder();
+  setLadder();
+  renderStart();
+}
+
+function gradeText(score){
+  if(score === 10) return "ЛЕГЕНДА ПАРКА ЮРСКОГО! 🏆 Ты ответил(а) на всё идеально.";
+  if(score === 9) return "Ты супер динозавр-эксперт! 🦖✨ Остался всего один шаг до легенды.";
+  if(score >= 7) return "Отлично! 🧠 Почти как настоящий палеонтолог.";
+  if(score >= 4) return "Хороший старт! 👍 Ещё чуть-чуть — и будешь профи.";
+  return "Тебе ещё многое предстоит узнать о динозаврах 🧩 — и это очень интересно!";
+}
+
+function renderEnd(){
+  abortIntro();
+  scorePill.textContent = state.score;
+
+  const review = state.history.map(h => {
+    const q = questions[h.qIdx];
+    const A = dinos[q.a];
+    const B = dinos[q.b];
+    const picked = explainOptionText(h.pickedKey, A.name, B.name);
+    const correct = explainOptionText(h.correctKey, A.name, B.name);
+    return `
+      <details ${h.isCorrect ? "" : "open"}>
+        <summary>Вопрос ${h.qIdx+1}: ${A.name} vs ${B.name} — ${h.isCorrect ? "✅ верно" : "❌ неверно"}</summary>
+        <div class="reviewItem">
+          <b>Твой ответ:</b> ${h.pickedKey} — ${picked}<br>
+          <b>Правильно:</b> ${h.correctKey} — ${correct}<br><br>
+          <b>Короткая история:</b> ${q.story}
+        </div>
+      </details>
+    `;
+  }).join("");
+
+  mainPanel.innerHTML = `
+    <div class="screen">
+      <div class="bigTitle">Финиш! 🎉</div>
+      <p class="bigText">
+        Твой результат: <b>${state.score} / 10</b><br>
+        <b>${gradeText(state.score)}</b>
+      </p>
+
+      <div class="startRow">
+        <button class="btn primary" id="playAgainBtn">
+          <span class="key">↺</span>
+          <span>
+            <div class="txt">Сыграть ещё раз</div>
+            <div class="sub">Вернуться к началу</div>
+          </span>
+        </button>
+        <button class="btn ghost" id="shareBtn">
+          <span class="key">★</span>
+          <span>
+            <div class="txt">Совет</div>
+            <div class="sub">Как стать ещё лучше</div>
+          </span>
+        </button>
+      </div>
+
+      <div class="summary">
+        <details>
+          <summary>Показать разбор всех 10 вопросов</summary>
+          ${review}
+        </details>
+      </div>
+
+      <p class="hint">Если хочешь, я могу сделать <b>ещё 10 новых вопросов</b> и добавить «подсказки» как в «миллионере» (50/50, помощь друга-палеонтолога и т.д.).</p>
+    </div>
+  `;
+
+  document.getElementById("playAgainBtn").addEventListener("click", resetGame);
+  document.getElementById("shareBtn").addEventListener("click", () => {
+    alert("Чтобы стать динозавр-экспертом:\n• запоминай периоды (юра/мел) и миллионы лет назад\n• отличай травоядных от хищников\n• смотри на защиту (броня/рога/шипы) и размер\n\nХочешь следующий набор вопросов?");
+  });
+
+  setLadder();
+}
+
+/** ========== ЭФФЕКТЫ ========== **/
+function popConfetti(){
+  confettiEl.innerHTML = "";
+  confettiEl.classList.add("show");
+  const w = window.innerWidth;
+  const pieces = 22;
+  for(let i=0;i<pieces;i++){
+    const p = document.createElement("div");
+    p.className = "piece";
+    const left = Math.random() * w;
+    const delay = Math.random() * 0.08;
+    const h = Math.floor(Math.random()*360);
+    p.style.left = left + "px";
+    p.style.top = (-20 - Math.random()*80) + "px";
+    p.style.background = `hsl(${h} 85% 60%)`;
+    p.style.animationDelay = delay + "s";
+    p.style.transform = `rotate(${Math.random()*180}deg)`;
+    confettiEl.appendChild(p);
+  }
+  setTimeout(() => confettiEl.classList.remove("show"), 1250);
+}
+
+/** ========== LIGHTBOX (УВЕЛИЧЕНИЕ КАРТИНКИ) ========== **/
+const lb = document.getElementById("lightbox");
+const lbImg = document.getElementById("lightboxImg");
+const lbTitle = document.getElementById("lightboxTitle");
+const lbCaption = document.getElementById("lightboxCaption");
+const lbSource = document.getElementById("lightboxSource");
+const lbClose = document.getElementById("lightboxClose");
+
+function openLightbox(src, caption, sourceUrl){
+  if(!src || !lb) return;
+  lb.classList.add("show");
+  lb.setAttribute("aria-hidden", "false");
+  lbImg.src = src;
+  lbTitle.textContent = caption ? `Картинка: ${caption}` : "Картинка";
+  lbCaption.textContent = caption ? caption : "";
+
+  if(sourceUrl){
+    lbSource.href = sourceUrl;
+    lbSource.style.display = "inline";
+  }else{
+    lbSource.style.display = "none";
+    lbSource.href = "#";
+  }
+}
+
+function closeLightbox(){
+  if(!lb) return;
+  lb.classList.remove("show");
+  lb.setAttribute("aria-hidden", "true");
+  setTimeout(()=>{ lbImg.removeAttribute("src"); }, 60);
+}
+
+lbClose?.addEventListener("click", closeLightbox);
+lb?.addEventListener("click", (e)=>{
+  if(e.target === lb) closeLightbox();
+});
+window.addEventListener("keydown", (e)=>{
+  if(e.key === "Escape" && lb?.classList.contains("show")) closeLightbox();
+});
+
+function attachZoomHandlers(){
+  const imgA = document.getElementById("imgA");
+  const imgB = document.getElementById("imgB");
+  const artA = imgA?.closest(".dinoArt");
+  const artB = imgB?.closest(".dinoArt");
+
+  const bind = (img, art) => {
+    if(!art) return;
+
+    art.style.cursor = "pointer";
+    art.title = "Нажми, чтобы открыть картинку в новой вкладке";
+
+    art.onclick = (ev) => {
+      const isZoomBtn = (ev.target && ev.target.classList && ev.target.classList.contains("zoomBtn"));
+      if(isZoomBtn) return;
+
+      const src = img?.dataset?.full || img?.src || "";
+      if(!src) return;
+      window.open(src, "_blank", "noopener,noreferrer");
+    };
+
+    const zoomBtn = art.querySelector(".zoomBtn");
+    if(zoomBtn){
+      zoomBtn.onclick = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const src = img?.dataset?.full || img?.src || "";
+        const caption = img?.dataset?.caption || "";
+        const source = img?.dataset?.source || "";
+        if(src) openLightbox(src, caption, source);
+      };
+    }
+  };
+
+  bind(imgA, artA);
+  bind(imgB, artB);
+}
+
+/** ========== КЛАВИАТУРА ========== **/
+window.addEventListener("keydown", (e)=>{
+  const k = (e.key || "").toUpperCase();
+  if(["A","B","C","D"].includes(k)){
+    const btn = document.getElementById(`btn${k}`);
+    if(btn && !btn.disabled) btn.click();
+  }
+  if(k === "ENTER"){
+    const next = document.getElementById("nextBtn");
+    if(next && !next.disabled) next.click();
+  }
+});
+
+/** ========== СТАРТ ========== **/
+buildLadder();
+setLadder();
+renderStart();
+</script>
+
+</body>
+</html>
