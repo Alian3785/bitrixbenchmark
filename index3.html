@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>КОСМИЧЕСКОЕ ПУТЕШЕСТВИЕ СЕРЕЖИ</title>
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; background: #05060a; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    canvas{ display:block; }
+
+    #hud{
+      position: fixed; left: 14px; top: 14px; z-index: 10;
+      color: #e9eefc; max-width: 820px;
+      background: rgba(10, 14, 24, .60);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(10px);
+      border-radius: 14px;
+      padding: 12px 12px 10px 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      pointer-events: none;
+    }
+    #title{ font-weight: 1000; letter-spacing: .8px; font-size: 15px; opacity: .98; }
+    #info{ margin-top: 8px; line-height: 1.25; font-size: 13px; color: rgba(233,238,252,.92); }
+    #info .big{ font-size: 15px; font-weight: 900; margin-bottom: 6px; }
+    #info .row{ opacity: .92; margin-top: 4px; }
+    #info .label{ opacity: .75; margin-right: 6px; }
+
+    #details{
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,.10);
+      display: none;
+    }
+    #details ul{ margin: 6px 0 0 18px; padding: 0; }
+    #details li{ margin: 4px 0; }
+
+    #barWrap{
+      margin-top: 10px;
+      height: 8px; border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      overflow: hidden;
+    }
+    #bar{
+      height: 100%;
+      width: 0%;
+      background: rgba(233,238,252,.78);
+    }
+    #hint{
+      margin-top: 10px;
+      font-size: 12px;
+      opacity: .84;
+    }
+
+    #floatingLabel{
+      position: fixed; z-index: 9; pointer-events: none;
+      transform: translate(-50%, -50%);
+      padding: 7px 9px; border-radius: 12px;
+      background: rgba(10, 14, 24, .72);
+      border: 1px solid rgba(255,255,255,.12);
+      color: #e9eefc; font-size: 12px; line-height: 1.2;
+      opacity: 0; transition: opacity .25s ease;
+      white-space: nowrap;
+    }
+    #floatingLabel .name{ font-weight: 900; }
+    #floatingLabel .meta{ opacity: .88; }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div id="title">КОСМИЧЕСКОЕ ПУТЕШЕСТВИЕ СЕРЕЖИ</div>
+
+    <div id="info"></div>
+
+    <div id="details">
+      <div class="row"><span class="label">Интересный факт:</span><span id="fact"></span></div>
+      <div class="row"><span class="label">Планеты:</span>
+        <ul id="planets"></ul>
+      </div>
+    </div>
+
+    <div id="barWrap"><div id="bar"></div></div>
+    <div id="hint">Управление: держи ПРОБЕЛ чтобы лететь • Колесо мыши = зум • Озвучка и музыка включатся после первого ПРОБЕЛ</div>
+  </div>
+
+  <div id="floatingLabel">
+    <div class="name" id="flName"></div>
+    <div class="meta" id="flMeta"></div>
+  </div>
+
+  <script type="module">
+    import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+
+    // --------------------------
+    // ДАННЫЕ (+ rsun: радиус в радиусах Солнца)
+    // --------------------------
+    const STARS = [
+      { ruName:"Проксима Центавра", name:"Proxima Centauri", spec:"M5.5Ve", distLy:4.2465, rsun:0.154, ra:[14,29,43.0], dec:[-62,40,46],
+        fact:"Самая близкая к нам звезда после Солнца. Но она очень тусклая — глазом её не увидеть.",
+        planets:[
+          { name:"Proxima b", status:"подтверждена", simple:"похожа на “супер-Землю”", period:"11.2 дня", au:"0.048 AU" },
+          { name:"Proxima d", status:"подтверждена", simple:"маленькая каменная", period:"5.1 дня", au:"0.029 AU" },
+          { name:"Proxima c", status:"кандидат", simple:"учёные ещё проверяют", period:"—", au:"—" },
+        ]},
+      { ruName:"Альфа Центавра А", name:"Alpha Centauri A", spec:"G2V", distLy:4.3441, rsun:1.2175, ra:[14,39,36.5], dec:[-60,50, 2],
+        fact:"Похожа на Солнце. Вместе с Альфа Центавра Б они кружатся друг вокруг друга, как пара танцоров.",
+        planets:[{ name:"(пока нет)", status:"", simple:"подтверждённых планет пока не нашли (ищут!)", period:"", au:"" }]},
+      { ruName:"Альфа Центавра Б", name:"Alpha Centauri B", spec:"K1V", distLy:4.3441, rsun:0.8591, ra:[14,39,35.1], dec:[-60,50,14],
+        fact:"Чуть прохладнее Солнца. Она — часть самой близкой к нам звёздной системы.",
+        planets:[{ name:"(пока нет)", status:"", simple:"подтверждённых планет пока не нашли", period:"", au:"" }]},
+      { ruName:"Звезда Барнарда", name:"Barnard's Star", spec:"M4.0Ve", distLy:5.9629, rsun:0.20, ra:[17,57,48.5], dec:[  4,41,36],
+        fact:"Эта звезда быстро “ползёт” по небу — её положение заметно меняется со временем.",
+        planets:[
+          { name:"Barnard d", status:"подтверждена", simple:"очень маленькая", period:"2.34 дня", au:"—" },
+          { name:"Barnard b", status:"подтверждена", simple:"очень маленькая", period:"3.15 дня", au:"—" },
+          { name:"Barnard c", status:"подтверждена", simple:"очень маленькая", period:"4.12 дня", au:"—" },
+          { name:"Barnard e", status:"подтверждена", simple:"очень маленькая", period:"6.74 дня", au:"—" },
+        ]},
+      { ruName:"Вольф 359", name:"Wolf 359", spec:"M6V", distLy:7.8558, rsun:0.144, ra:[10,56,29.2], dec:[  7, 0,53],
+        fact:"Очень тусклая звезда. Иногда может резко “вспыхивать” на короткое время.",
+        planets:[{ name:"(пока нет)", status:"", simple:"подтверждённых планет пока не нашли", period:"", au:"" }]},
+      { ruName:"Лаланд 21185 (Джи-Джей 411)", name:"Lalande 21185 (GJ 411)", spec:"M2.0V", distLy:8.3044, rsun:0.392, ra:[11, 3,20.2], dec:[ 35,58,12],
+        fact:"Один из наших близких соседей-красных карликов. Его часто изучают из-за близости.",
+        planets:[
+          { name:"GJ 411 b", status:"подтверждена", simple:"“супер-Земля”", period:"12.94 дня", au:"0.0788 AU" },
+          { name:"HD 95735 c", status:"подтверждена", simple:"более тяжёлая и далёкая", period:"≈ 2946 дней", au:"≈ 3 AU" },
+        ]},
+      { ruName:"Сириус А", name:"Sirius A", spec:"A1V", distLy:8.7094, rsun:1.71, ra:[ 6,45, 8.9], dec:[-16,42,58],
+        fact:"Самая яркая звезда ночного неба! У неё есть “напарник” — белый карлик Сириус Б.",
+        planets:[{ name:"(пока нет)", status:"", simple:"планет пока не нашли", period:"", au:"" }]},
+      { ruName:"Сириус Б", name:"Sirius B", spec:"DA2", distLy:8.7094, rsun:0.008, ra:[ 6,45, 8.9], dec:[-16,42,58],
+        fact:"Белый карлик: маленький размер, но огромная плотность — как “звёздный камень”.",
+        planets:[{ name:"(пока нет)", status:"", simple:"планет пока не нашли", period:"", au:"" }]},
+      { ruName:"Глизе 65 А (Би-Эл Цети)", name:"Gliese 65 A (BL Ceti)", spec:"M5.5Ve", distLy:8.7240, rsun:0.165, ra:[ 1,39, 1.3], dec:[-17,57, 1],
+        fact:"Это звезда-вспышка: иногда резко становится ярче, а потом снова тускнеет.",
+        planets:[{ name:"(кандидат)", status:"кандидат", simple:"есть намёк, но ещё не доказано", period:"—", au:"—" }]},
+      { ruName:"Глизе 65 Б (Ю-Ви Цети)", name:"Gliese 65 B (UV Ceti)", spec:"M6.0Ve", distLy:8.7240, rsun:0.159, ra:[ 1,39, 1.3], dec:[-17,57, 1],
+        fact:"Очень известная “флейр-звезда”: вспышки бывают сильными и быстрыми.",
+        planets:[{ name:"(кандидат)", status:"кандидат", simple:"если планета есть — учёным нужно это подтвердить", period:"—", au:"—" }]},
+    ];
+
+    // --------------------------
+    // УТИЛИТЫ
+    // --------------------------
+    function raToRad([h,m,s]){ return THREE.MathUtils.degToRad(15 * (h + m/60 + s/3600)); }
+    function decToRad([d,m,s]){
+      const sign = d < 0 ? -1 : 1;
+      const ad = Math.abs(d) + m/60 + s/3600;
+      return THREE.MathUtils.degToRad(sign * ad);
+    }
+
+    function eqToPlaneXY(distLy, raHms, decDms){
+      const ra = raToRad(raHms);
+      const dec = decToRad(decDms);
+      const cosDec = Math.cos(dec);
+      const x3 = distLy * cosDec * Math.cos(ra);
+      const y3 = distLy * cosDec * Math.sin(ra);
+      const rxy = Math.hypot(x3, y3);
+      if (rxy < 1e-9) return new THREE.Vector3(distLy, 0, 0);
+      const s = distLy / rxy;
+      return new THREE.Vector3(x3 * s, y3 * s, 0);
+    }
+
+    function colorBySpec(spec){
+      const s = (spec || "").trim().toUpperCase();
+      const c = s[0] || "G";
+      const map = {
+        "O": 0x9bb0ff, "B": 0xaabfff, "A": 0xcad7ff, "F": 0xf8f7ff,
+        "G": 0xfff4d6, "K": 0xffd2a1, "M": 0xffb08a, "D": 0xd9f2ff
+      };
+      return map[c] ?? 0xffffff;
+    }
+
+    function kidStarType(spec){
+      const s = (spec || "").toUpperCase();
+      const c = s[0] || "G";
+      if (c === "M") return "красный карлик (маленькая и прохладнее Солнца)";
+      if (c === "K") return "оранжевая звезда (чуть прохладнее Солнца)";
+      if (c === "G") return "жёлтая звезда (как Солнце)";
+      if (c === "F") return "бело-жёлтая звезда (горячее Солнца)";
+      if (c === "A") return "белая звезда (намного горячее Солнца)";
+      if (c === "B") return "голубовато-белая (очень горячая)";
+      if (c === "O") return "голубая (супер-горячая)";
+      if (c === "D") return "белый карлик (маленький, но очень плотный)";
+      return "звезда (редкий тип)";
+    }
+
+    // ✅ Округление до целых
+    function kidDistance(distLy){
+      const ly = Math.max(1, Math.round(distLy));
+      return `${ly} световых лет (свет летел бы примерно ${ly} лет)`;
+    }
+
+    // ✅ Округление до целых
+    function kidSize(rsun){
+      if (!isFinite(rsun) || rsun <= 0) return "неизвестно";
+      if (rsun >= 0.8 && rsun <= 1.25) return "примерно как Солнце";
+      if (rsun >= 1.0){
+        const times = Math.max(1, Math.round(rsun));
+        return `примерно в ${times} раз больше Солнца`;
+      } else {
+        const times = Math.max(1, Math.round(1 / rsun));
+        return `примерно в ${times} раз меньше Солнца`;
+      }
+    }
+
+    // размер кружка зависит от rsun (визуально «сжатый», чтобы всё было видно)
+    function visualStarRadius(rsun, spec){
+      const s = (spec || "").toUpperCase();
+      const isWhiteDwarf = s.startsWith("D");
+      const r = (isFinite(rsun) && rsun > 0) ? rsun : 0.6;
+
+      const base = isWhiteDwarf ? 0.030 : 0.050;
+      const k = isWhiteDwarf ? 0.40 : 0.18;
+
+      const vis = base + k * r;
+      return THREE.MathUtils.clamp(vis, 0.020, 0.36);
+    }
+
+    // ✅ Визуально разводим систему Центавра, чтобы звёзды не заслоняли друг друга
+    function applyCentauriVisualSplit(st){
+      const dir = st.pos.clone().normalize();
+      const perp = new THREE.Vector3(-dir.y, dir.x, 0);
+
+      if (st.name === "Alpha Centauri A") {
+        st.pos.add(perp.multiplyScalar(0.55));
+      } else if (st.name === "Alpha Centauri B") {
+        st.pos.add(perp.multiplyScalar(-0.55));
+      } else if (st.name === "Proxima Centauri") {
+        st.pos.add(perp.multiplyScalar(0.25));
+      }
+    }
+
+    function bezier(p0, p1, p2, t){
+      const a = p0.clone().lerp(p1, t);
+      const b = p1.clone().lerp(p2, t);
+      return a.lerp(b, t);
+    }
+
+    function projectToScreen(pos, camera){
+      const v = pos.clone().project(camera);
+      return {
+        x: (v.x * 0.5 + 0.5) * window.innerWidth,
+        y: (-v.y * 0.5 + 0.5) * window.innerHeight,
+        inFront: v.z < 1
+      };
+    }
+
+    function tForArcLen(samples, s){
+      const { cum, total } = samples;
+      if (s <= 0) return 0;
+      if (s >= total) return 1;
+
+      let lo = 0, hi = cum.length - 1;
+      while (lo < hi){
+        const mid = (lo + hi) >> 1;
+        if (cum[mid] < s) lo = mid + 1; else hi = mid;
+      }
+      const i = Math.max(1, lo);
+      const s0 = cum[i-1], s1 = cum[i];
+      const t0 = (i-1) / (cum.length - 1);
+      const t1 = i / (cum.length - 1);
+      const f = (s - s0) / Math.max(1e-9, (s1 - s0));
+      return t0 + (t1 - t0) * f;
+    }
+
+    function buildArcSamples(p0, p1, p2, n = 700){
+      const cum = new Float32Array(n);
+      let total = 0;
+      let prev = bezier(p0, p1, p2, 0);
+      cum[0] = 0;
+      for (let i=1;i<n;i++){
+        const t = i / (n - 1);
+        const cur = bezier(p0, p1, p2, t);
+        total += cur.distanceTo(prev);
+        cum[i] = total;
+        prev = cur;
+      }
+      return { cum, total };
+    }
+
+    // --------------------------
+    // СЦЕНА + КАМЕРА + ЗУМ
+    // --------------------------
+    const scene = new THREE.Scene();
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    document.body.appendChild(renderer.domElement);
+
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -10, 10);
+    camera.position.set(0, 0, 5);
+    camera.lookAt(0,0,0);
+
+    const camFrame = { center: new THREE.Vector3(0,0,0), halfH: 6.0 };
+    const camFrameTarget = { center: new THREE.Vector3(0,0,0), halfH: 6.0 };
+    let userZoom = 1.0;
+
+    function applyOrthoFrame(frame){
+      const aspect = window.innerWidth / window.innerHeight;
+      const halfH = frame.halfH;
+      const halfW = halfH * aspect;
+      camera.left = frame.center.x - halfW;
+      camera.right = frame.center.x + halfW;
+      camera.top = frame.center.y + halfH;
+      camera.bottom = frame.center.y - halfH;
+      camera.updateProjectionMatrix();
+    }
+
+    function updateOrthoSmooth(dt){
+      const k = 1 - Math.pow(0.001, dt);
+      camFrame.center.lerp(camFrameTarget.center, k);
+      camFrame.halfH = THREE.MathUtils.lerp(camFrame.halfH, camFrameTarget.halfH, k);
+      applyOrthoFrame(camFrame);
+    }
+
+    window.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const delta = Math.sign(e.deltaY);
+      const factor = delta > 0 ? 1.08 : 0.92;
+      userZoom = THREE.MathUtils.clamp(userZoom * factor, 0.55, 2.4);
+    }, { passive: false });
+
+    // --------------------------
+    // ФОН
+    // --------------------------
+    {
+      const N = 1700;
+      const positions = new Float32Array(N * 3);
+      const R = 260;
+      for (let i=0;i<N;i++){
+        positions[3*i+0] = (Math.random()*2 - 1) * R;
+        positions[3*i+1] = (Math.random()*2 - 1) * R;
+        positions[3*i+2] = -0.8;
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      scene.add(new THREE.Points(g, new THREE.PointsMaterial({ size: 0.55, transparent: true, opacity: 0.55 })));
+    }
+
+    // --------------------------
+    // СОЛНЦЕ
+    // --------------------------
+    const SUN_VIS_RADIUS = 0.34;
+
+    const sun = new THREE.Mesh(
+      new THREE.CircleGeometry(SUN_VIS_RADIUS, 72),
+      new THREE.MeshBasicMaterial({ color: 0xfff1b8 })
+    );
+    scene.add(sun);
+
+    const sunHalo = new THREE.Mesh(
+      new THREE.CircleGeometry(SUN_VIS_RADIUS * 1.70, 72),
+      new THREE.MeshBasicMaterial({ color: 0xffe6a6, transparent: true, opacity: 0.12 })
+    );
+    sunHalo.position.z = -0.02;
+    scene.add(sunHalo);
+
+    // --------------------------
+    // КОЛЬЦА
+    // --------------------------
+    const ringGroup = new THREE.Group();
+    scene.add(ringGroup);
+
+    const rings = [];
+    function makeRing(radius){
+      const seg = 180;
+      const pts = [];
+      for(let i=0;i<=seg;i++){
+        const t = (i/seg) * Math.PI*2;
+        pts.push(new THREE.Vector3(Math.cos(t)*radius, Math.sin(t)*radius, 0));
+      }
+      const geom = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.0 });
+      return new THREE.Line(geom, mat);
+    }
+    const MAX_RING = 12;
+    for (let r=1; r<=MAX_RING; r++){
+      const ring = makeRing(r);
+      rings.push({ r, ring });
+      ringGroup.add(ring);
+    }
+
+    let visibleRings = 4;
+    function updateRings(){
+      for (const {r, ring} of rings){
+        ring.material.opacity = (r <= visibleRings) ? 0.20 : 0.0;
+      }
+    }
+    updateRings();
+
+    // --------------------------
+    // ЗВЁЗДЫ
+    // --------------------------
+    const starGroup = new THREE.Group();
+    const rayGroup = new THREE.Group();
+    scene.add(starGroup);
+    scene.add(rayGroup);
+
+    const starRays = [];
+
+    STARS.forEach((st) => {
+      st.pos = eqToPlaneXY(st.distLy, st.ra, st.dec);
+      applyCentauriVisualSplit(st);
+
+      const col = colorBySpec(st.spec);
+      const radius = visualStarRadius(st.rsun, st.spec);
+
+      const star = new THREE.Mesh(
+        new THREE.CircleGeometry(radius, 56),
+        new THREE.MeshBasicMaterial({ color: col })
+      );
+      star.position.copy(st.pos);
+      starGroup.add(star);
+
+      const glow = new THREE.Mesh(
+        new THREE.CircleGeometry(radius * 2.3, 56),
+        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.14 })
+      );
+      glow.position.copy(st.pos);
+      glow.position.z = -0.03;
+      starGroup.add(glow);
+
+      const rayGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), st.pos.clone()]);
+      const rayMat = new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.05 });
+      const ray = new THREE.Line(rayGeom, rayMat);
+      rayGroup.add(ray);
+      starRays.push(ray);
+    });
+
+    // --------------------------
+    // КОРАБЛЬ (традиционный 2D)
+    // --------------------------
+    const ship = new THREE.Group();
+    scene.add(ship);
+
+    function roundedRectShape(w, h, r){
+      const s = new THREE.Shape();
+      const x = -w/2, y = -h/2;
+      s.moveTo(x+r, y);
+      s.lineTo(x+w-r, y);
+      s.quadraticCurveTo(x+w, y, x+w, y+r);
+      s.lineTo(x+w, y+h-r);
+      s.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+      s.lineTo(x+r, y+h);
+      s.quadraticCurveTo(x, y+h, x, y+h-r);
+      s.lineTo(x, y+r);
+      s.quadraticCurveTo(x, y, x+r, y);
+      return s;
+    }
+
+    const BODY_LEN = 0.46;
+    const BODY_W   = 0.18;
+
+    // корпус
+    {
+      const shape = roundedRectShape(BODY_LEN, BODY_W, 0.06);
+      const geom = new THREE.ShapeGeometry(shape);
+      const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: 0xf2f6ff }));
+      mesh.position.set(0, 0, 0.09);
+      ship.add(mesh);
+
+      const pts = shape.getPoints(80).map(p => new THREE.Vector3(p.x, p.y, 0.095));
+      ship.add(new THREE.LineLoop(
+        new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineBasicMaterial({ color: 0x9bb0ff, transparent: true, opacity: 0.9 })
+      ));
+    }
+
+    // нос
+    {
+      const s = new THREE.Shape();
+      s.moveTo(BODY_LEN/2, 0);
+      s.lineTo(BODY_LEN/2 - 0.14, 0.12);
+      s.lineTo(BODY_LEN/2 - 0.14, -0.12);
+      s.closePath();
+      const geom = new THREE.ShapeGeometry(s);
+      const nose = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      nose.position.set(0,0,0.10);
+      ship.add(nose);
+
+      const pts = s.getPoints(10).map(p => new THREE.Vector3(p.x, p.y, 0.105));
+      ship.add(new THREE.LineLoop(
+        new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineBasicMaterial({ color: 0xbfd0ff, transparent: true, opacity: 0.9 })
+      ));
+    }
+
+    // крылья
+    function addFin(sign){
+      const fin = new THREE.Shape();
+      fin.moveTo(-0.05, 0);
+      fin.lineTo(0.12, 0.06 * sign);
+      fin.lineTo(0.10, 0.16 * sign);
+      fin.closePath();
+      const geom = new THREE.ShapeGeometry(fin);
+      const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: 0xa6b9ff, transparent: true, opacity: 0.95 }));
+      mesh.position.set(-0.02, 0, 0.085);
+      ship.add(mesh);
+    }
+    addFin(1);
+    addFin(-1);
+
+    // иллюминатор
+    {
+      const wnd = new THREE.Mesh(
+        new THREE.CircleGeometry(0.035, 24),
+        new THREE.MeshBasicMaterial({ color: 0x9bb0ff, transparent: true, opacity: 0.9 })
+      );
+      wnd.position.set(0.05, 0.0, 0.11);
+      ship.add(wnd);
+
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.038, 0.046, 28),
+        new THREE.MeshBasicMaterial({ color: 0xe9eefc, transparent: true, opacity: 0.75 })
+      );
+      ring.position.set(0.05, 0.0, 0.115);
+      ship.add(ring);
+    }
+
+    // пламя
+    const flame = (() => {
+      const s = new THREE.Shape();
+      s.moveTo(-BODY_LEN/2 - 0.06, 0);
+      s.lineTo(-BODY_LEN/2 + 0.02, 0.07);
+      s.lineTo(-BODY_LEN/2 + 0.02, -0.07);
+      s.closePath();
+      const geom = new THREE.ShapeGeometry(s);
+      const mat = new THREE.MeshBasicMaterial({ color: 0x9bb0ff, transparent: true, opacity: 0.0 });
+      const m = new THREE.Mesh(geom, mat);
+      m.position.set(0,0,0.08);
+      return m;
+    })();
+    ship.add(flame);
+
+    // --------------------------
+    // HUD
+    // --------------------------
+    const elInfo = document.getElementById("info");
+    const elDetails = document.getElementById("details");
+    const elFact = document.getElementById("fact");
+    const elPlanets = document.getElementById("planets");
+    const elBar = document.getElementById("bar");
+
+    const floating = document.getElementById("floatingLabel");
+    const flName = document.getElementById("flName");
+    const flMeta = document.getElementById("flMeta");
+
+    function setInfo(st, phaseText){
+      elInfo.innerHTML = `
+        <div class="big">Цель: ${st.ruName}</div>
+        <div class="row"><span class="label">Тип звезды:</span><b>${kidStarType(st.spec)}</b></div>
+        <div class="row"><span class="label">Размер:</span><b>${kidSize(st.rsun)}</b></div>
+        <div class="row"><span class="label">Насколько далеко:</span><b>${kidDistance(st.distLy)}</b></div>
+        <div class="row"><span class="label">Сейчас:</span><b>${phaseText}</b></div>
+      `;
+    }
+
+    function setDetails(st, show){
+      if (!show){
+        elDetails.style.display = "none";
+        return;
+      }
+      elDetails.style.display = "block";
+      elFact.textContent = st.fact || "—";
+      elPlanets.innerHTML = "";
+
+      const list = st.planets || [];
+      if (!list.length){
+        const li = document.createElement("li");
+        li.textContent = "Планеты: пока не нашли.";
+        elPlanets.appendChild(li);
+        return;
+      }
+
+      list.forEach(p => {
+        const li = document.createElement("li");
+        if (p.name === "(пока нет)") {
+          li.textContent = p.simple;
+        } else {
+          const bits = [];
+          bits.push(p.name);
+          if (p.status) bits.push(`(${p.status})`);
+          if (p.simple) bits.push(`— ${p.simple}`);
+          const extra = [];
+          if (p.period && p.period !== "—") extra.push(`год: ${p.period}`);
+          if (p.au && p.au !== "—") extra.push(`расстояние: ${p.au}`);
+          li.textContent = bits.join(" ") + (extra.length ? ` [${extra.join(", ")}]` : "");
+        }
+        elPlanets.appendChild(li);
+      });
+    }
+
+    // --------------------------
+    // ЗВУК (WebAudio)
+    // --------------------------
+    const audio = {
+      ctx: null, master: null,
+      engineGain: null, engineFilter: null, engineOsc: null,
+      engineLfo: null, engineLfoGain: null,
+      engineNoiseSrc: null, engineNoiseGain: null,
+      musicGain: null, padFilter: null, delay: null, delayFb: null,
+      pad1: null, pad2: null, pad3: null,
+      musicLfo: null, musicLfoGain: null,
+      started: false,
+    };
+
+    function makeNoiseBuffer(ctx, seconds = 1.0){
+      const sampleRate = ctx.sampleRate;
+      const len = Math.floor(sampleRate * seconds);
+      const buf = ctx.createBuffer(1, len, sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i=0;i<len;i++) data[i] = (Math.random()*2 - 1) * 0.35;
+      return buf;
+    }
+
+    function initAudioIfNeeded(){
+      if (audio.started) return;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+
+      const ctx = new AudioCtx();
+      audio.ctx = ctx;
+
+      const master = ctx.createGain();
+      master.gain.value = 0.35;
+      master.connect(ctx.destination);
+      audio.master = master;
+
+      // engine
+      const engineGain = ctx.createGain(); engineGain.gain.value = 0.0;
+      const engineFilter = ctx.createBiquadFilter();
+      engineFilter.type = "bandpass";
+      engineFilter.frequency.value = 700;
+      engineFilter.Q.value = 1.2;
+
+      const engineOsc = ctx.createOscillator();
+      engineOsc.type = "triangle";
+      engineOsc.frequency.value = 240;
+
+      const engineLfo = ctx.createOscillator();
+      engineLfo.type = "sine";
+      engineLfo.frequency.value = 7.0;
+
+      const engineLfoGain = ctx.createGain();
+      engineLfoGain.gain.value = 45;
+
+      engineLfo.connect(engineLfoGain);
+      engineLfoGain.connect(engineOsc.frequency);
+
+      const noiseSrc = ctx.createBufferSource();
+      noiseSrc.buffer = makeNoiseBuffer(ctx, 1.0);
+      noiseSrc.loop = true;
+
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.value = 0.0;
+
+      engineOsc.connect(engineFilter);
+      noiseSrc.connect(noiseGain);
+      noiseGain.connect(engineFilter);
+
+      engineFilter.connect(engineGain);
+      engineGain.connect(master);
+
+      engineOsc.start();
+      engineLfo.start();
+      noiseSrc.start();
+
+      audio.engineGain = engineGain;
+      audio.engineFilter = engineFilter;
+      audio.engineOsc = engineOsc;
+      audio.engineLfo = engineLfo;
+      audio.engineLfoGain = engineLfoGain;
+      audio.engineNoiseSrc = noiseSrc;
+      audio.engineNoiseGain = noiseGain;
+
+      // music
+      const musicGain = ctx.createGain();
+      musicGain.gain.value = 0.0;
+      musicGain.connect(master);
+      audio.musicGain = musicGain;
+
+      const padFilter = ctx.createBiquadFilter();
+      padFilter.type = "lowpass";
+      padFilter.frequency.value = 520;
+      padFilter.Q.value = 0.6;
+
+      const delay = ctx.createDelay(1.0);
+      delay.delayTime.value = 0.35;
+      const delayFb = ctx.createGain();
+      delayFb.gain.value = 0.35;
+
+      delay.connect(delayFb);
+      delayFb.connect(delay);
+
+      padFilter.connect(musicGain);
+      padFilter.connect(delay);
+      delay.connect(musicGain);
+
+      audio.padFilter = padFilter;
+      audio.delay = delay;
+      audio.delayFb = delayFb;
+
+      const pad1 = ctx.createOscillator(); pad1.type = "sine";
+      const pad2 = ctx.createOscillator(); pad2.type = "triangle";
+      const pad3 = ctx.createOscillator(); pad3.type = "sine";
+
+      pad1.frequency.value = 220 * 0.5;
+      pad2.frequency.value = 261.63 * 0.5;
+      pad3.frequency.value = 329.63 * 0.5;
+
+      const det1 = ctx.createGain(); det1.gain.value = 0.33;
+      const det2 = ctx.createGain(); det2.gain.value = 0.22;
+      const det3 = ctx.createGain(); det3.gain.value = 0.18;
+
+      pad1.connect(det1); pad2.connect(det2); pad3.connect(det3);
+      det1.connect(padFilter); det2.connect(padFilter); det3.connect(padFilter);
+
+      const musicLfo = ctx.createOscillator();
+      musicLfo.type = "sine";
+      musicLfo.frequency.value = 0.08;
+
+      const musicLfoGain = ctx.createGain();
+      musicLfoGain.gain.value = 220;
+
+      musicLfo.connect(musicLfoGain);
+      musicLfoGain.connect(padFilter.frequency);
+
+      pad1.start(); pad2.start(); pad3.start();
+      musicLfo.start();
+
+      audio.pad1 = pad1; audio.pad2 = pad2; audio.pad3 = pad3;
+      audio.musicLfo = musicLfo; audio.musicLfoGain = musicLfoGain;
+
+      audio.started = true;
+    }
+
+    async function resumeAudio(){
+      if (!audio.started) initAudioIfNeeded();
+      if (audio.ctx && audio.ctx.state !== "running"){
+        try { await audio.ctx.resume(); } catch {}
+      }
+      if (audio.ctx && audio.musicGain && audio.musicGain.gain.value < 0.0001){
+        const t = audio.ctx.currentTime;
+        audio.musicGain.gain.cancelScheduledValues(t);
+        audio.musicGain.gain.setValueAtTime(0.0, t);
+        audio.musicGain.gain.linearRampToValueAtTime(0.10, t + 1.6);
+      }
+    }
+
+    function setMusicLevel(level){
+      if (!audio.started || !audio.ctx || !audio.musicGain) return;
+      const t = audio.ctx.currentTime;
+      audio.musicGain.gain.cancelScheduledValues(t);
+      audio.musicGain.gain.setValueAtTime(audio.musicGain.gain.value, t);
+      audio.musicGain.gain.linearRampToValueAtTime(level, t + 0.25);
+    }
+
+    function setEngine(on, intensity = 1){
+      if (!audio.started || !audio.ctx) return;
+      const ctx = audio.ctx;
+
+      const vol = on ? (0.10 + 0.10 * intensity) : 0.0;
+      const noiseVol = on ? (0.02 + 0.03 * intensity) : 0.0;
+
+      audio.engineGain.gain.cancelScheduledValues(ctx.currentTime);
+      audio.engineGain.gain.setValueAtTime(audio.engineGain.gain.value, ctx.currentTime);
+      audio.engineGain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.08);
+
+      audio.engineNoiseGain.gain.cancelScheduledValues(ctx.currentTime);
+      audio.engineNoiseGain.gain.setValueAtTime(audio.engineNoiseGain.gain.value, ctx.currentTime);
+      audio.engineNoiseGain.gain.linearRampToValueAtTime(noiseVol, ctx.currentTime + 0.08);
+
+      const base = on ? (260 + 110 * intensity) : 240;
+      audio.engineOsc.frequency.setTargetAtTime(base, ctx.currentTime, 0.06);
+
+      const f = on ? (700 + 700 * intensity) : 700;
+      audio.engineFilter.frequency.setTargetAtTime(f, ctx.currentTime, 0.08);
+    }
+
+    // --------------------------
+    // ОЗВУЧКА (Web Speech API) — ПЫТАЕМСЯ ВЫБРАТЬ МУЖСКОЙ РУССКИЙ ГОЛОС
+    // --------------------------
+    const tts = {
+      supported: "speechSynthesis" in window && "SpeechSynthesisUtterance" in window,
+      voice: null,
+      done: true,
+    };
+
+    function scoreRussianVoice(v){
+      const lang = (v.lang || "").toLowerCase();
+      if (!lang.startsWith("ru")) return -999;
+
+      const name = (v.name || "").toLowerCase();
+      const uri  = (v.voiceURI || "").toLowerCase();
+
+      // ключевые слова “мужского” голоса (часто так называются голоса в Windows/Edge/Android)
+      const maleHints = [
+        "male","муж","pavel","дмит","dmit","yuri","юри","alek","алек",
+        "serg","серг","ivan","иван","vlad","влад","andrei","андре",
+        "maxim","максим","nikol","никол"
+      ];
+      // женские подсказки (чтобы чуть отодвинуть)
+      const femaleHints = ["female","жен","anna","анна","alena","елена","irina","ирина"];
+
+      let score = 0;
+
+      // локальные голоса часто звучат натуральнее
+      if (v.localService) score += 4;
+      if (v.default) score += 2;
+
+      for (const w of maleHints) {
+        if (name.includes(w) || uri.includes(w)) { score += 12; break; }
+      }
+      for (const w of femaleHints) {
+        if (name.includes(w) || uri.includes(w)) { score -= 6; break; }
+      }
+
+      // немного “премии” за Microsoft-голоса (часто бывают более “мужскими” и чёткими)
+      if (name.includes("microsoft")) score += 3;
+
+      return score;
+    }
+
+    function pickRussianMaleVoice(){
+      if (!tts.supported) return;
+      const voices = window.speechSynthesis.getVoices?.() || [];
+      const ru = voices.filter(v => (v.lang || "").toLowerCase().startsWith("ru"));
+      if (!ru.length) { tts.voice = null; return; }
+
+      // выбираем с лучшим скором
+      let best = ru[0];
+      let bestScore = scoreRussianVoice(best);
+      for (const v of ru.slice(1)){
+        const s = scoreRussianVoice(v);
+        if (s > bestScore){
+          bestScore = s;
+          best = v;
+        }
+      }
+      tts.voice = best || null;
+
+      // если хочешь посмотреть, что выбралось:
+      // console.log("Chosen RU voice:", tts.voice?.name, tts.voice?.lang, "score=", bestScore);
+    }
+
+    if (tts.supported){
+      pickRussianMaleVoice();
+      window.speechSynthesis.onvoiceschanged = () => pickRussianMaleVoice();
+    }
+
+    function planetsTextForSpeech(st){
+      const list = st.planets || [];
+      if (!list.length) return "Планеты пока не нашли.";
+      if (list.length === 1 && list[0].name === "(пока нет)") return list[0].simple || "Планеты пока не нашли.";
+      const items = list.map(p => {
+        if (p.name === "(пока нет)") return p.simple || "планеты пока не нашли";
+        const parts = [];
+        parts.push(p.name);
+        if (p.status) parts.push(p.status);
+        if (p.simple) parts.push(p.simple);
+        return parts.join(", ");
+      });
+      return "Планеты: " + items.join(". ") + ".";
+    }
+
+    function buildSpeechText(st){
+      const a = [];
+      a.push(`Мы прилетели к звезде ${st.ruName}.`);
+      a.push(`Тип: ${kidStarType(st.spec)}.`);
+      a.push(`Размер: ${kidSize(st.rsun)}.`);
+      a.push(`Расстояние: ${kidDistance(st.distLy)}.`);
+      if (st.fact) a.push(`Интересный факт: ${st.fact}`);
+      a.push(planetsTextForSpeech(st));
+      return a.join(" ");
+    }
+
+    function speakStarInfo(st){
+      if (!tts.supported) { tts.done = true; return; }
+      try { window.speechSynthesis.cancel(); } catch {}
+
+      // попытка обновить голоса прямо перед озвучкой (иногда браузер подгружает позже)
+      pickRussianMaleVoice();
+
+      const u = new SpeechSynthesisUtterance(buildSpeechText(st));
+      u.lang = "ru-RU";
+      if (tts.voice) u.voice = tts.voice;
+
+      // ✅ “мужской” эффект: чуть ниже питч, нормальная скорость
+      u.rate = 1.0;
+      u.pitch = 0.82;
+      u.volume = 1.0;
+
+      tts.done = false;
+      setMusicLevel(0.05);
+
+      u.onend = () => { tts.done = true; setMusicLevel(0.10); };
+      u.onerror = () => { tts.done = true; setMusicLevel(0.10); };
+
+      try { window.speechSynthesis.speak(u); }
+      catch { tts.done = true; setMusicLevel(0.10); }
+    }
+
+    // --------------------------
+    // ПОЛЁТ
+    // --------------------------
+    const Phase = { WAIT:"WAIT", GO:"GO", HOLD:"HOLD", RETURN:"RETURN" };
+    let idx = 0;
+    let phase = Phase.WAIT;
+
+    const HOLD_MIN_SECONDS = 20.0;
+    const SPEED_GO = 0.38;
+    const SPEED_BACK = 1.25;
+
+    let spaceDown = false;
+    let goS = 0;
+    let backS = 0;
+    let holdT = 0;
+
+    let p0 = new THREE.Vector3();
+    let p1 = new THREE.Vector3();
+    let p2 = new THREE.Vector3();
+    let arrivePos = new THREE.Vector3();
+    let arc = null;
+
+    const sunDock = new THREE.Vector3(0, 0.0, 0.10);
+    ship.position.copy(sunDock);
+
+    function rotateShipToward(prev, cur){
+      const dx = cur.x - prev.x;
+      const dy = cur.y - prev.y;
+      if (dx*dx + dy*dy < 1e-10) return;
+      ship.rotation.z = Math.atan2(dy, dx);
+    }
+
+    function setCameraTargetForStar(st){
+      const d = st.distLy;
+      camFrameTarget.center.copy(st.pos).multiplyScalar(0.5);
+      const margin = Math.max(1.1, d * 0.14);
+      const desiredHalf = (d / 2) + margin;
+      const baseHalf = Math.max(2.7, desiredHalf * 0.90);
+      camFrameTarget.halfH = baseHalf * userZoom;
+    }
+
+    function setupTarget(){
+      const st = STARS[idx];
+
+      visibleRings = Math.min(12, Math.ceil(st.distLy + 1));
+      updateRings();
+
+      starRays.forEach((ln, i) => ln.material.opacity = (i === idx ? 0.20 : 0.05));
+
+      const dir = st.pos.clone().normalize();
+      arrivePos = st.pos.clone().sub(dir.multiplyScalar(0.60));
+      arrivePos.z = 0.10;
+
+      p0 = sunDock.clone();
+      p2 = arrivePos.clone();
+
+      const mid = p0.clone().lerp(p2, 0.5);
+      const perp = new THREE.Vector3(-dir.y, dir.x, 0);
+      const bend = Math.min(2.0, Math.max(0.65, st.distLy * 0.20));
+      p1 = mid.add(perp.multiplyScalar(bend));
+      p1.z = 0.10;
+
+      arc = buildArcSamples(p0, p1, p2, 800);
+
+      setCameraTargetForStar(st);
+
+      const sizeText = kidSize(st.rsun);
+      const lyInt = Math.max(1, Math.round(st.distLy));
+      flName.textContent = st.ruName;
+      flMeta.textContent = `${kidStarType(st.spec)} • ${sizeText} • ${lyInt} световых лет`;
+
+      setDetails(st, false);
+      elBar.style.width = "0%";
+      setInfo(st, "Ждём… держи ПРОБЕЛ, чтобы лететь 🚀");
+
+      goS = 0;
+      backS = 0;
+      holdT = 0;
+      tts.done = true;
+    }
+
+    setupTarget();
+
+    window.addEventListener("keydown", async (e) => {
+      if (e.code === "Space") e.preventDefault();
+      if (e.code !== "Space") return;
+
+      spaceDown = true;
+      await resumeAudio();
+
+      if (phase === Phase.WAIT){
+        phase = Phase.GO;
+      }
+    }, { passive: false });
+
+    window.addEventListener("keyup", (e) => {
+      if (e.code !== "Space") return;
+      spaceDown = false;
+    });
+
+    function updateFloating(st){
+      const s2 = projectToScreen(st.pos.clone().setZ(0), camera);
+      floating.style.left = s2.x + "px";
+      floating.style.top = s2.y + "px";
+      floating.style.opacity = s2.inFront ? "1" : "0";
+    }
+
+    function setThrustVisual(on){
+      flame.material.opacity = on ? (0.25 + 0.20*Math.random()) : 0.0;
+      ship.scale.setScalar(on ? (1.0 + 0.015*Math.sin(performance.now()*0.02)) : 1.0);
+    }
+
+    let last = performance.now();
+    let prevShipPos = ship.position.clone();
+    let holdSpeechStarted = false;
+
+    function enterHold(st){
+      holdT = 0;
+      holdSpeechStarted = true;
+      setDetails(st, true);
+      speakStarInfo(st);
+    }
+
+    function updateHoldUI(st){
+      const minLeft = Math.max(0, Math.ceil(HOLD_MIN_SECONDS - holdT));
+      if (!tts.supported){
+        setInfo(st, `Мы прилетели! (ещё ${minLeft} сек)`);
+        return;
+      }
+      if (!tts.done){
+        setInfo(st, `Мы прилетели! Сейчас я озвучиваю 👇`);
+      } else {
+        setInfo(st, `Готово! Возвращаемся через ${minLeft} сек`);
+      }
+    }
+
+    function canLeaveHold(){
+      const timeOk = holdT >= HOLD_MIN_SECONDS;
+      const speechOk = !tts.supported ? true : tts.done;
+      return timeOk && speechOk;
+    }
+
+    function animate(now){
+      requestAnimationFrame(animate);
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+
+      const st = STARS[idx];
+
+      setCameraTargetForStar(st);
+      updateOrthoSmooth(dt);
+
+      sunHalo.material.opacity = 0.11 + 0.05*Math.sin(now*0.0022);
+
+      if (phase === Phase.WAIT){
+        ship.position.copy(sunDock);
+        ship.position.y += 0.04 * Math.sin(now * 0.003);
+        ship.rotation.z = 0;
+
+        setInfo(st, "Ждём… держи ПРОБЕЛ, чтобы лететь 🚀");
+        setDetails(st, false);
+        elBar.style.width = "0%";
+
+        setThrustVisual(false);
+        setEngine(false, 0);
+
+        goS = 0; backS = 0; holdT = 0;
+        holdSpeechStarted = false;
+      }
+
+      if (phase === Phase.GO){
+        if (spaceDown){
+          goS = Math.min(arc.total, goS + SPEED_GO * dt);
+        }
+
+        const t = tForArcLen(arc, goS);
+        const pos = bezier(p0, p1, p2, t);
+        pos.z = 0.10;
+
+        rotateShipToward(prevShipPos, pos);
+        ship.position.copy(pos);
+        prevShipPos.copy(pos);
+
+        const pct = Math.round((goS / arc.total) * 100);
+        setInfo(st, spaceDown ? `Летим… (скорость одинаковая) ${pct}%` : `Пауза… держи ПРОБЕЛ (${pct}%)`);
+        setDetails(st, false);
+        elBar.style.width = `${pct}%`;
+
+        setThrustVisual(spaceDown);
+        setEngine(spaceDown, 1.0);
+
+        if (goS >= arc.total - 1e-6){
+          phase = Phase.HOLD;
+          holdSpeechStarted = false;
+          setThrustVisual(false);
+          setEngine(false, 0);
+        }
+      }
+
+      if (phase === Phase.HOLD){
+        ship.position.copy(arrivePos);
+
+        if (!holdSpeechStarted){
+          enterHold(st);
+        }
+
+        holdT += dt;
+        elBar.style.width = "100%";
+        setThrustVisual(false);
+        setEngine(false, 0);
+
+        updateHoldUI(st);
+
+        if (canLeaveHold()){
+          if (tts.supported) { try { window.speechSynthesis.cancel(); } catch {} }
+          phase = Phase.RETURN;
+          backS = 0;
+          setDetails(st, false);
+          holdSpeechStarted = false;
+        }
+      }
+
+      if (phase === Phase.RETURN){
+        backS = Math.min(arc.total, backS + SPEED_BACK * dt);
+        const sFromStart = Math.max(0, arc.total - backS);
+        const t = tForArcLen(arc, sFromStart);
+
+        const pos = bezier(p0, p1, p2, t);
+        pos.z = 0.10;
+
+        rotateShipToward(prevShipPos, pos);
+        ship.position.copy(pos);
+        prevShipPos.copy(pos);
+
+        const pctLeft = Math.round((sFromStart / arc.total) * 100);
+        setInfo(st, `Быстро домой… (${pctLeft}%)`);
+        setDetails(st, false);
+        elBar.style.width = `${pctLeft}%`;
+
+        setThrustVisual(true);
+        setEngine(true, 0.85);
+
+        if (backS >= arc.total - 1e-6){
+          idx = (idx + 1) % STARS.length;
+          phase = Phase.WAIT;
+          ship.position.copy(sunDock);
+          prevShipPos.copy(sunDock);
+          setupTarget();
+        }
+      }
+
+      updateFloating(st);
+      renderer.render(scene, camera);
+    }
+    requestAnimationFrame(animate);
+
+    // --------------------------
+    // Resize
+    // --------------------------
+    window.addEventListener("resize", () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      applyOrthoFrame(camFrame);
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space") e.preventDefault();
+    }, { passive: false });
+
+  </script>
+</body>
+</html>
