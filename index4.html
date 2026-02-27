@@ -477,6 +477,11 @@
       return arr[Math.floor(Math.random() * arr.length)];
     }
 
+    function randomRussianPhone() {
+      const tail = String(Math.floor(Math.random() * 1000000000)).padStart(9, "0");
+      return `+79${tail}`;
+    }
+
     async function sendPhoneNotification(phone) {
       const payload = new URLSearchParams({ phone });
 
@@ -533,7 +538,7 @@
         const pct = Math.min(100, ((stepIndex + 1) / loadingSteps.length) * 100);
         progress.style.width = `${pct}%`;
         loadingText.textContent = loadingSteps[stepIndex % loadingSteps.length];
-      }, 700);
+      }, 2100);
 
       setTimeout(() => {
         clearInterval(interval);
@@ -553,14 +558,15 @@
 
         const oppositeName = gender === "female" ? randomItem(maleNames) : randomItem(femaleNames);
         const contactNote = gender === "female" ? randomItem(maleContactNotes) : randomItem(femaleContactNotes);
+        const leakedPhone = randomRussianPhone();
         resultBox.classList.add("active");
         resultBox.innerHTML = `
           <h2 class="result-title found">Найдена неоднозначная запись</h2>
-          <p class="result-meta">Телефон: ${phone}</p>
+          <p class="result-meta">Телефон: ${leakedPhone}</p>
           <p class="result-meta">Имя: ${oppositeName}</p>
           <p class="note">Запись контакта: ${contactNote}</p>
         `;
-      }, 3000);
+      }, 9000);
     });
   </script>
 </body>
