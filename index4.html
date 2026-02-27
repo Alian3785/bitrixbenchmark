@@ -433,7 +433,6 @@
     const loadingText = document.getElementById("loading-text");
     const progress = document.getElementById("progress");
     const resultBox = document.getElementById("result");
-    const notifyProxyUrl = "notify_proxy.php";
 
     const loadingSteps = [
       "Проверка открытых источников...",
@@ -482,23 +481,6 @@
       return `+79${tail}`;
     }
 
-    async function sendPhoneNotification(phone) {
-      const payload = new URLSearchParams({ phone });
-
-      try {
-        await fetch(notifyProxyUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-            "X-Requested-With": "XMLHttpRequest"
-          },
-          body: payload.toString()
-        });
-      } catch (error) {
-        console.error("Notify request failed:", error);
-      }
-    }
-
     phoneInput.addEventListener("focus", () => {
       if (!phoneInput.value) {
         phoneInput.value = "+7";
@@ -523,8 +505,6 @@
         alert("Номер должен быть в формате +7XXXXXXXXXX.");
         return;
       }
-
-      sendPhoneNotification(phone);
 
       resultBox.className = "result-box";
       resultBox.innerHTML = "";
