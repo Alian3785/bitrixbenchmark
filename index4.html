@@ -27,7 +27,7 @@
     body {
       margin: 0;
       min-height: 100vh;
-      padding: 24px 16px 120px;
+      padding: 24px 16px 210px;
       font-family: "Manrope", sans-serif;
       color: var(--text);
       background:
@@ -220,54 +220,108 @@
       font-style: italic;
     }
 
-    .disclaimer {
-      margin: 14px 0 0;
-      color: #f0c8d5;
-      font-size: 12px;
-    }
-
     .ticker-wrap {
       position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: #4d1f31;
-      border-top: 1px solid #aa6079;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 18px;
+      width: min(1280px, calc(100% - 16px));
+      background: linear-gradient(135deg, rgba(88, 33, 52, 0.95), rgba(66, 27, 45, 0.95));
+      border: 1px solid #b66f89;
+      border-radius: 18px;
+      box-shadow: 0 22px 48px rgba(29, 8, 17, 0.55);
+      backdrop-filter: blur(3px);
+      padding: 14px 12px 12px;
       overflow: hidden;
+      z-index: 50;
+    }
+
+    .ticker-wrap::before {
+      content: "";
+      position: absolute;
+      inset: -55% -20% auto;
+      height: 120px;
+      background: radial-gradient(circle, rgba(255, 185, 214, 0.28), transparent 60%);
+      pointer-events: none;
     }
 
     .ticker {
       width: 100%;
       white-space: nowrap;
       overflow: hidden;
-      border-top: 1px solid #8c4b61;
+      padding: 5px 0;
+    }
+
+    .ticker + .ticker {
+      margin-top: 4px;
     }
 
     .ticker-row {
-      display: inline-block;
-      min-width: 200%;
-      padding: 8px 0;
-      font-family: "Caveat", cursive;
-      letter-spacing: 0.5px;
-      font-size: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-width: max-content;
     }
 
-    .ticker-male .ticker-row {
-      color: #d6ecff;
-      text-shadow: 0 0 14px rgba(129, 183, 255, 0.35);
+    .ticker-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #d7d7d7;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
     }
 
-    .ticker-female .ticker-row {
-      color: #ffd9e8;
-      text-shadow: 0 0 14px rgba(255, 154, 193, 0.35);
+    .avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      flex-shrink: 0;
+    }
+
+    .handle {
+      font-family: "Manrope", sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: #333;
+      letter-spacing: 0.1px;
+    }
+
+    .ticker-male .ticker-chip {
+      background: #eaf4ff;
+      border-color: #8bbcf2;
+    }
+
+    .ticker-male .avatar {
+      background: linear-gradient(135deg, #81b7ff, #375f9f);
+    }
+
+    .ticker-male .handle {
+      color: #1f4f86;
+    }
+
+    .ticker-female .ticker-chip {
+      background: #ffeef5;
+      border-color: #efa9c5;
+    }
+
+    .ticker-female .avatar {
+      background: linear-gradient(135deg, #ff9ac0, #b9517f);
+    }
+
+    .ticker-female .handle {
+      color: #9a2f59;
     }
 
     .ticker-left .ticker-row {
-      animation: move-left 18s linear infinite;
+      animation: move-left 28s linear infinite;
     }
 
     .ticker-right .ticker-row {
-      animation: move-right 20s linear infinite;
+      animation: move-right 31s linear infinite;
     }
 
     @keyframes move-left {
@@ -283,6 +337,20 @@
     @media (max-width: 760px) {
       .form-grid {
         grid-template-columns: 1fr;
+      }
+
+      .ticker-wrap {
+        bottom: 10px;
+        width: calc(100% - 10px);
+        padding: 10px 8px 8px;
+      }
+
+      .ticker-chip {
+        padding: 8px 10px;
+      }
+
+      .handle {
+        font-size: 11px;
       }
     }
   </style>
@@ -324,18 +392,35 @@
     </section>
 
     <section id="result" class="result-box" aria-live="polite"></section>
-    <p class="disclaimer">Демо-режим: все результаты сгенерированы случайно и не используют реальные базы.</p>
   </main>
 
   <footer class="ticker-wrap" aria-hidden="true">
     <div class="ticker ticker-left ticker-male">
       <div class="ticker-row">
-        Любимый • Родной • Алексей ❤️ • Мой герой • Защитник • Котик • Мужчина мечты 💙 • Любимый • Родной • Алексей •
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Малыш</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Любимый</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Алексей ❤️</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Сереженька</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Милый</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Котик</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Родной 💙</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Детка</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Принц</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Малыш</span></span>
       </div>
     </div>
     <div class="ticker ticker-right ticker-female">
       <div class="ticker-row">
-        Любимка • Милая • Малышка • Принцесса 💗 • Красотка • Нежная • Зайка ❤️ • Любимка • Милая • Малышка •
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Малышка</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Любимка</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Детка</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Солнышко</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Котенок</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Милая</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Зайка 💗</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Принцесса</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Нежная</span></span>
+        <span class="ticker-chip"><span class="avatar"></span><span class="handle">Малышка</span></span>
       </div>
     </div>
   </footer>
