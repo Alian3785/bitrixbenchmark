@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Проверка Партнера</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Caveat:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-0: #2a0f19;
+      --bg-1: #4e1b2e;
+      --text: #fff6f8;
+      --muted: #e8c8d1;
+      --line: #7c4254;
+      --card: #4a1f2e;
+      --accent: #ff8fb1;
+      --danger: #ffd3df;
+      --ok: #d5ffd8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px 16px 120px;
+      font-family: "Manrope", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 8%, #ffb6cd66 0%, transparent 35%),
+        radial-gradient(circle at 90% 12%, #ffd4e066 0%, transparent 30%),
+        linear-gradient(155deg, var(--bg-0), var(--bg-1) 52%, #2e1120);
+      display: grid;
+      place-items: center;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 720px;
+      background: linear-gradient(180deg, #6a2840, #4d1f31);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: 0 24px 60px rgba(44, 14, 26, 0.45);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .shell::before {
+      content: "";
+      position: absolute;
+      inset: -40% -20% auto auto;
+      width: 260px;
+      height: 260px;
+      background: radial-gradient(circle, #ffc4d388 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .title {
+      margin: 0;
+      font-family: "Bebas Neue", sans-serif;
+      letter-spacing: 1px;
+      font-size: clamp(38px, 8vw, 68px);
+      line-height: 0.9;
+      color: #ffe7ee;
+      text-shadow: 0 3px 14px rgba(255, 200, 220, 0.25);
+    }
+
+    .subtitle {
+      margin: 8px 0 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .prompt {
+      margin: 0 0 10px;
+      color: #ffeaf1;
+      font-size: clamp(18px, 3vw, 24px);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .source-box {
+      margin: 0 0 18px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #b66a85;
+      background: linear-gradient(180deg, #5d2438, #512033);
+    }
+
+    .source-text {
+      margin: 0;
+      color: #ffe5ee;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .source-tags {
+      margin: 8px 0 0;
+      color: #ffd7e4;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr 1fr auto;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #ffe5ec;
+      font-size: 13px;
+    }
+
+    select,
+    input,
+    button {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #3e1a2a;
+      color: var(--text);
+      border-radius: 10px;
+      min-height: 44px;
+      padding: 10px 12px;
+      font: inherit;
+    }
+
+    input:focus,
+    select:focus {
+      outline: 1px solid #c2758f;
+      border-color: #d2839f;
+    }
+
+    button {
+      align-self: end;
+      font-weight: 700;
+      border-color: #cf7f9a;
+      cursor: pointer;
+      background: linear-gradient(180deg, #ff9ebd, #e4749d);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      color: #3d1625;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: #ffd4e2;
+    }
+
+    .loading-box,
+    .result-box {
+      margin-top: 16px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      display: none;
+    }
+
+    .loading-box.active,
+    .result-box.active {
+      display: block;
+    }
+
+    .progress-wrap {
+      width: 100%;
+      height: 8px;
+      margin-top: 8px;
+      border-radius: 999px;
+      background: #6d3549;
+      overflow: hidden;
+    }
+
+    .progress {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #ffc2d3, var(--accent));
+      transition: width 0.5s ease;
+    }
+
+    .loading-text {
+      margin: 0;
+      color: #ffe9ef;
+      font-size: 14px;
+    }
+
+    .result-title {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .result-title.no-data {
+      color: var(--ok);
+    }
+
+    .result-title.found {
+      color: var(--danger);
+    }
+
+    .result-meta {
+      margin: 4px 0;
+      color: #ffe7ef;
+      font-size: 14px;
+    }
+
+    .note {
+      margin: 10px 0 0;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #cf7f99;
+      background: #5d2336;
+      color: #ffe4ec;
+      font-style: italic;
+    }
+
+    .disclaimer {
+      margin: 14px 0 0;
+      color: #f0c8d5;
+      font-size: 12px;
+    }
+
+    .ticker-wrap {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #4d1f31;
+      border-top: 1px solid #aa6079;
+      overflow: hidden;
+    }
+
+    .ticker {
+      width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      border-top: 1px solid #8c4b61;
+    }
+
+    .ticker-row {
+      display: inline-block;
+      min-width: 200%;
+      padding: 8px 0;
+      font-family: "Caveat", cursive;
+      letter-spacing: 0.5px;
+      font-size: 32px;
+    }
+
+    .ticker-male .ticker-row {
+      color: #d6ecff;
+      text-shadow: 0 0 14px rgba(129, 183, 255, 0.35);
+    }
+
+    .ticker-female .ticker-row {
+      color: #ffd9e8;
+      text-shadow: 0 0 14px rgba(255, 154, 193, 0.35);
+    }
+
+    .ticker-left .ticker-row {
+      animation: move-left 18s linear infinite;
+    }
+
+    .ticker-right .ticker-row {
+      animation: move-right 20s linear infinite;
+    }
+
+    @keyframes move-left {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    @keyframes move-right {
+      from { transform: translateX(-50%); }
+      to { transform: translateX(0); }
+    }
+
+    @media (max-width: 760px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <h1 class="title">LOVE CHECK</h1>
+    <p class="subtitle">Проверка твоей любимки: выбери пол, введи номер и дождись результата.</p>
+    <p class="prompt">Сомневаешься в своём партнёре? Проверь его контакт на ключевые слова!</p>
+    <div class="source-box">
+      <p class="source-tags">Слитые базы данных • Telegram-боты пробива (Глаз Бога, Userbox и.т.д.) • GetContact</p>
+    </div>
+
+    <form id="scan-form">
+      <div class="form-grid">
+        <div>
+          <label for="gender">Пол</label>
+          <select id="gender" required>
+            <option value="">Выбрать</option>
+            <option value="female">Женский</option>
+            <option value="male">Мужской</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="phone">Телефон</label>
+          <input id="phone" type="tel" inputmode="numeric" maxlength="12" placeholder="+7XXXXXXXXXX" required>
+        </div>
+
+        <button type="submit">Проверить</button>
+      </div>
+    </form>
+
+    <section id="loading" class="loading-box" aria-live="polite">
+      <p id="loading-text" class="loading-text">Подключение к источникам...</p>
+      <div class="progress-wrap">
+        <div id="progress" class="progress"></div>
+      </div>
+    </section>
+
+    <section id="result" class="result-box" aria-live="polite"></section>
+    <p class="disclaimer">Демо-режим: все результаты сгенерированы случайно и не используют реальные базы.</p>
+  </main>
+
+  <footer class="ticker-wrap" aria-hidden="true">
+    <div class="ticker ticker-left ticker-male">
+      <div class="ticker-row">
+        Любимый • Родной • Алексей ❤️ • Мой герой • Защитник • Котик • Мужчина мечты 💙 • Любимый • Родной • Алексей •
+      </div>
+    </div>
+    <div class="ticker ticker-right ticker-female">
+      <div class="ticker-row">
+        Любимка • Милая • Малышка • Принцесса 💗 • Красотка • Нежная • Зайка ❤️ • Любимка • Милая • Малышка •
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const form = document.getElementById("scan-form");
+    const phoneInput = document.getElementById("phone");
+    const genderInput = document.getElementById("gender");
+    const loadingBox = document.getElementById("loading");
+    const loadingText = document.getElementById("loading-text");
+    const progress = document.getElementById("progress");
+    const resultBox = document.getElementById("result");
+
+    const loadingSteps = [
+      "Проверка открытых источников...",
+      "Сопоставление цифрового следа...",
+      "Анализ заметок и сигналов...",
+      "Формирование отчета..."
+    ];
+
+    const femaleEntries = [
+      { nick: "@lina.sunsets", place: "Telegram / Заметки", note: "«Сказала, что занята учебой, а сама снова до ночи в караоке»" },
+      { nick: "@sofia.urbanx", place: "Instagram / Истории", note: "«Если спросит, где была, скажу: с подругой на йоге»" },
+      { nick: "@anya.wave", place: "VK / Черновики", note: "«Новый поклонник лучше прежнего, но пока держу в секрете»" }
+    ];
+
+    const maleEntries = [
+      { nick: "@roma.north", place: "Telegram / Личное", note: "«Обещал, что только работа, а в итоге матч и бар до двух»" },
+      { nick: "@nik.dragon", place: "VK / Сохраненное", note: "«Главное не перепутать, кому какой подарок пообещал»" },
+      { nick: "@ivan.sonic", place: "Notes / iCloud", note: "«Пишет, что любит, но все еще активен в знакомствах»" }
+    ];
+
+    function clampPhone(value) {
+      const digits = value.replace(/\D/g, "");
+      const cleaned = digits.startsWith("7") ? digits.slice(1, 11) : digits.slice(0, 10);
+      return `+7${cleaned}`;
+    }
+
+    function isValidPhone(value) {
+      return /^\+7\d{10}$/.test(value);
+    }
+
+    function randomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    phoneInput.addEventListener("focus", () => {
+      if (!phoneInput.value) {
+        phoneInput.value = "+7";
+      }
+    });
+
+    phoneInput.addEventListener("input", () => {
+      phoneInput.value = clampPhone(phoneInput.value);
+    });
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const gender = genderInput.value;
+      const phone = phoneInput.value.trim();
+
+      if (!gender) {
+        alert("Выберите пол.");
+        return;
+      }
+
+      if (!isValidPhone(phone)) {
+        alert("Номер должен быть в формате +7XXXXXXXXXX.");
+        return;
+      }
+
+      resultBox.className = "result-box";
+      resultBox.innerHTML = "";
+      loadingBox.classList.add("active");
+      progress.style.width = "0%";
+
+      let stepIndex = 0;
+      loadingText.textContent = loadingSteps[0];
+      const interval = setInterval(() => {
+        stepIndex += 1;
+        const pct = Math.min(100, ((stepIndex + 1) / loadingSteps.length) * 100);
+        progress.style.width = `${pct}%`;
+        loadingText.textContent = loadingSteps[stepIndex % loadingSteps.length];
+      }, 700);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        progress.style.width = "100%";
+        loadingBox.classList.remove("active");
+
+        const noData = Math.random() < 0.5;
+        if (noData) {
+          resultBox.classList.add("active");
+          resultBox.innerHTML = `
+            <h2 class="result-title no-data">Компроментирующих данных не найдено</h2>
+            <p class="result-meta">Профиль: ${phone}</p>
+            <p class="result-meta">Статус: чисто по открытым источникам</p>
+          `;
+          return;
+        }
+
+        const entry = gender === "female" ? randomItem(femaleEntries) : randomItem(maleEntries);
+        resultBox.classList.add("active");
+        resultBox.innerHTML = `
+          <h2 class="result-title found">Найдена неоднозначная запись</h2>
+          <p class="result-meta">Профиль: ${phone}</p>
+          <p class="result-meta">Ник: ${entry.nick}</p>
+          <p class="result-meta">Источник: ${entry.place}</p>
+          <p class="note">${entry.note}</p>
+        `;
+      }, 3000);
+    });
+  </script>
+</body>
+</html>
