@@ -90,6 +90,21 @@ a {
 
 .brand-text {
   min-width: 0;
+  flex: 1;
+}
+
+.brand-text small {
+  display: block;
+  margin-top: 2px;
+  color: var(--green-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.brand-text small span {
+  display: inline;
 }
 
 .brand-zusya {
